@@ -1,0 +1,90 @@
+import { Component, ReactNode, Fragment } from 'react';
+import { Provider } from 'react-redux';
+import { HashRouter, Route, Switch } from 'react-router-dom';
+import { Layout } from "antd";
+
+import configureStore from '../stores/configureStore';
+import { 
+    ENV_LIST_ROUTE, 
+    PROJECT_LIST_ROUTE,
+    ENVVAR_LIST_ROUTE,
+    VERSION_ITERATOR_LIST_ROUTE,
+    VERSION_ITERATOR_ADD_ROUTE,
+    VERSION_ITERATOR_DETAIL_ROUTE,
+    INTERNET_REQUEST,
+    INTERNET_REQUEST_BY_HISTORY_ROUTE,
+    INTERNET_REQUEST_BY_API_ROUTE,
+    REQUEST_TO_ITERATOR_ROUTE,
+    REQUEST_ITERATOR_DETAIL_ROUTE,
+    REQUEST_ITERATOR_LIST_ROUTE,
+    REQUEST_HISTORY,
+    VERSION_ITERATOR_DOC_ROUTE,
+    REQUEST_PROJECT_LIST_ROUTE,
+    UNITTEST_ITERATOR_LIST_ROUTE,
+    UNITTEST_ITERATOR_EXECUTOR_LIST_ROUTE,
+    UNITTEST_STEP_ADD_ROUTE,
+    UNITTEST_STEP_EDIT_ROUTE,
+    WELCOME_ROUTE 
+} from '../../config/routers';
+import Nav from '../components/nav';
+import HomePage from "./home";
+import EnvListPage from "./env";
+import ProjectListPage from "./prj";
+import EnvVarPage from "./env_var";
+import VersionIteratorPage from "./version_iterator";
+import VersionIteratorAddPage from "./version_iterator/add"
+import NetSendPage from './request_send';
+import RequestHistoryPage from './request_history';
+import RequestToSaveContainerPage from './request_save/to_save';
+import RequestSaveDetailContainerPage from './request_save/save_detail';
+import VersionIteratorRequestListPage from "./request_list_version";
+import ProjectRequestListPage from "./request_list_project";
+import VersionIteratorDocPage from "./iterator_doc";
+import UnittestListVersionPage from "./unittest_list_version";
+import UnittestExecutorListPage from "./unittest_executor_list";
+import UnittestStepPage from "./unittest_step";
+
+const store = configureStore({});
+
+class MyRouter extends Component {
+
+    render(): ReactNode {
+        return (
+            <Provider store={store}>
+                <HashRouter>
+                    <Fragment>
+                        <Layout style={{ minHeight: '100vh' }}>
+                            <Nav />
+                            <Layout>
+                                <Switch>
+                                    <Route path={ ENV_LIST_ROUTE } component={EnvListPage} />
+                                    <Route path={ PROJECT_LIST_ROUTE } component={ProjectListPage} />
+                                    <Route path={ ENVVAR_LIST_ROUTE } component={EnvVarPage} />
+                                    <Route path={ VERSION_ITERATOR_LIST_ROUTE } component={VersionIteratorPage} />
+                                    <Route path={ VERSION_ITERATOR_ADD_ROUTE } component={VersionIteratorAddPage}/>
+                                    <Route path={ VERSION_ITERATOR_DETAIL_ROUTE } component={VersionIteratorAddPage}/>
+                                    <Route path={ INTERNET_REQUEST } component={NetSendPage} />
+                                    <Route path={ INTERNET_REQUEST_BY_HISTORY_ROUTE } component={NetSendPage} />
+                                    <Route path={ INTERNET_REQUEST_BY_API_ROUTE } component={NetSendPage} />
+                                    <Route path={ REQUEST_HISTORY } component={RequestHistoryPage} />
+                                    <Route path={ REQUEST_TO_ITERATOR_ROUTE } component={RequestToSaveContainerPage} />
+                                    <Route path={ REQUEST_ITERATOR_DETAIL_ROUTE } component={RequestSaveDetailContainerPage} />
+                                    <Route path={ REQUEST_ITERATOR_LIST_ROUTE } component={VersionIteratorRequestListPage} />
+                                    <Route path={ VERSION_ITERATOR_DOC_ROUTE } component={VersionIteratorDocPage} />
+                                    <Route path={ REQUEST_PROJECT_LIST_ROUTE } component={ProjectRequestListPage} />
+                                    <Route path={ UNITTEST_ITERATOR_LIST_ROUTE } component={UnittestListVersionPage} />
+                                    <Route path={ UNITTEST_ITERATOR_EXECUTOR_LIST_ROUTE } component={UnittestExecutorListPage} />
+                                    <Route path={ UNITTEST_STEP_ADD_ROUTE } component={UnittestStepPage} />
+                                    <Route path={ UNITTEST_STEP_EDIT_ROUTE } component={UnittestStepPage} />
+                                    <Route path={ WELCOME_ROUTE } component={HomePage} />
+                                </Switch>
+                            </Layout>
+                        </Layout>
+                    </Fragment>
+                </HashRouter>
+            </Provider>
+        );
+    }
+}
+  
+export default MyRouter;
