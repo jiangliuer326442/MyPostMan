@@ -38,9 +38,9 @@
 
 如果不想从源码一步步编译，可以从以下链接下载可执行文件：
 
-windows 平台：[ MyPostMan-Setup-0.0.1.exe](https://gitee.com/onlinetool/mypostman/releases/download/v0.0.1/MyPostMan-Setup-0.0.1.exe)
+windows 平台：[ MyPostMan-Setup-0.0.1.exe](http://cdn.fanghailiang.cn/MyPostMan-Setup-0.0.1.exe)
 
-mac 系统：[ MyPostMan-0.0.1.dmg](https://gitee.com/onlinetool/mypostman/releases/download/v0.0.1/MyPostMan-0.0.1.dmg)
+mac 系统：[ MyPostMan-0.0.1.dmg](http://cdn.fanghailiang.cn/MyPostMan-0.0.1.dmg)
 
 第一次使用软件，可以参照我们下面的新手指引一步步做，完成一个天气预报项目的接口文档编写，迭代自动化测试等。
 
