@@ -36,7 +36,14 @@ export default class extends Component {
                         <MarkNav
                             className="toc-list"
                             source={ this.state.content }
-                            ordered={true}
+                            ordered={ false }
+                            updateHashAuto={ false }
+                            onNavItemClick={(event, element, hash) => {
+                                let iteratorId = sessionStorage.getItem("iterator_doc_iteratorId");
+                                setTimeout(() => {
+                                    window.location.href = "#/version_iterator_doc/" + iteratorId + "#" + hash;
+                                }, 800);
+                            }}
                         />
                     </div>
                 </Flex>

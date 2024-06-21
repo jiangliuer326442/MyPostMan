@@ -1,6 +1,12 @@
+export type ChannelsUserInfo = 'pipeline_init_userinfo';
+
 export const ChannelsUserInfoStr = 'pipeline_init_userinfo';
 
-export type ChannelsUserInfo = 'pipeline_init_userinfo';
+export const ChannelsUserInfoPingStr = 'ping';
+
+export const ChannelsUserInfoSetUserinfoStr = 'set_userinfo';
+
+export const ChannelsUserInfoSetAppinfoStr = 'set_appinfo';
 
 export const ChannelsOpenWindowStr = 'pipeline_open_window';
 
@@ -44,6 +50,9 @@ export const ChannelsAutoUpgradeCheckStr = 'pipeline_autoupgrade_check';
 
 export const ChannelsAutoUpgradeNewVersionStr = 'pipeline_autoupgrade_newversion';
 
+//当前已是最新版本，无需更新。
+export const ChannelsAutoUpgradeLatestStr = 'pipeline_autoupgrade_latest';
+
 export const ChannelsAutoUpgradeDownloadStr = 'pipeline_autoupgrade_download';
 
 export const IS_AUTO_UPGRADE = "storage.checkAutoUpgrade";
@@ -53,6 +62,10 @@ export const UUID = "device.uuid";
 export const UNAME = "device.uname";
 
 export const REG_TIME = "device.rtime";
+
+export const APPNAME = "app.name";
+
+export const APPVERSION = "app.version";
 
 export const PRJ = "env_vars_prj";
 
@@ -76,4 +89,8 @@ export const CONTENT_TYPE = "Content-Type";
 
 export const CONTENT_TYPE_URLENCODE = "application/x-www-form-urlencoded";
 
-export const CONTENT_TYPE_FORMDATA = "multipart/form-data"
+export const CONTENT_TYPE_FORMDATA = "multipart/form-data";
+
+export const GLobalPort = 4343;
+
+export const DevHtmlPort = 1212;

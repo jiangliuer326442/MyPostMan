@@ -1,24 +1,49 @@
-import { UUID, UNAME, REG_TIME } from '../../../config/global_config';
+import { UUID, UNAME, REG_TIME, APPNAME, APPVERSION } from '../../../config/global_config';
 import { SET_DEVICE_INFO } from '../../../config/redux';
+import { isStringEmpty } from '../../util';
 
 export default function (state = {
   uuid: "",
   uname: "",
+  appName: "",
+  appVersion: "",
   rtime: 0
-}, action : object) {
+}, action : any) {
   if(action.type === SET_DEVICE_INFO) {
-      sessionStorage.setItem(UUID, action.uuid);
-      sessionStorage.setItem(UNAME, action.uname);
-      sessionStorage.setItem(REG_TIME, action.rtime);
-      return Object.assign({}, state, {
-        uuid: action.uuid,
-        uname: action.uname,
-        rtime: action.rtime
-      });
+      let newState : any = {};
+
+      if (action.uuid !== undefined) {
+        sessionStorage.setItem(UUID, action.uuid);
+        newState.uuid = action.uuid;
+      }
+
+      if (action.uname !== undefined) {
+        sessionStorage.setItem(UNAME, action.uname);
+        newState.uname = action.uname;
+      }
+
+      if (action.rtime !== undefined) {
+        sessionStorage.setItem(REG_TIME, action.rtime);
+        newState.rtime = action.rtime;
+      }
+
+      if (action.appName !== undefined) {
+        sessionStorage.setItem(APPNAME, action.appName);
+        newState.appName = action.appName;
+      }
+
+      if (action.appVersion !== undefined) {
+        sessionStorage.setItem(APPVERSION, action.appVersion);
+        newState.appVersion = action.appVersion;
+      }
+      
+      return Object.assign({}, state, newState);
   }else if(state.uuid === "") {
-    state.uuid = sessionStorage.getItem(UUID) == null ? "" : sessionStorage.getItem("device.uuid");
-    state.uname = sessionStorage.getItem(UNAME) == null ? "" : sessionStorage.getItem("device.uname");
-    state.rtime = sessionStorage.getItem(REG_TIME) == null ? 0 : sessionStorage.getItem("device.rtime") as number;
+    state.uuid = isStringEmpty(sessionStorage.getItem(UUID)) ? "" : sessionStorage.getItem(UUID) as string;
+    state.uname = isStringEmpty(sessionStorage.getItem(UNAME)) ? "" : sessionStorage.getItem(UNAME) as string;
+    state.rtime = isStringEmpty(sessionStorage.getItem(REG_TIME)) ? 0 : Number(sessionStorage.getItem(REG_TIME));
+    state.appName = isStringEmpty(sessionStorage.getItem(APPNAME)) ? "" : sessionStorage.getItem(APPNAME) as string;
+    state.appVersion = isStringEmpty(sessionStorage.getItem(APPVERSION)) ? "" : sessionStorage.getItem(APPVERSION) as string;
   }
   return state;
 }

@@ -2,15 +2,30 @@
 import { URL } from 'url';
 import path from 'path';
 import { app } from 'electron';
+import log from 'electron-log';
+
+import { GLobalPort } from '../../config/global_config';
 
 export function resolveHtmlPath(htmlFileName: string) {
+  let port = process.env.FORMAL_PORT || GLobalPort;
+  const url = new URL(`http://localhost:${port}`);
   if (process.env.NODE_ENV === 'development') {
-    const port = process.env.PORT || 1212;
-    const url = new URL(`http://localhost:${port}`);
+    url.pathname = "proxy/" + htmlFileName;
+  } else {
     url.pathname = htmlFileName;
-    return url.href;
   }
-  return `file://${path.resolve(__dirname, '../renderer/', htmlFileName)}`;
+  log.debug("resolveHtmlPath:", url.href);
+  return url.href;
+}
+
+export function getPackageJson() : string {
+  let retPath ;
+  if (app.isPackaged) {
+    retPath = path.join(__dirname, '../../package.json')
+  } else {
+    retPath = path.join(__dirname, '../../../release/app/package.json')
+  }
+  return retPath;
 }
 
 export async function genUUID() {

@@ -4,6 +4,7 @@ import windowInitFunc from './window';
 import MarkdownInitFunc from './markdown';
 import PostManInitFunc from './postman';
 import UpdaterInitFunc from './updater';
+import ProductInitFunc from './product';
 
 export default function (mainWindow : BrowserWindow){
     userInitFunc();
@@ -11,4 +12,5 @@ export default function (mainWindow : BrowserWindow){
     MarkdownInitFunc();
     PostManInitFunc();
     UpdaterInitFunc();
+    ProductInitFunc();
 }

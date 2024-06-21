@@ -53,7 +53,7 @@ const configuration: webpack.Configuration = {
 
   output: {
     path: webpackPaths.distRendererPath,
-    publicPath: '/',
+    publicPath: '/proxy/',
     filename: 'renderer.dev.js',
     library: {
       type: 'umd',

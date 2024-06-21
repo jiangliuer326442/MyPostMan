@@ -5,6 +5,8 @@ import {
     ChannelsDbExportStr,
     ChannelsDbWriteStr,
     ChannelsDbImportStr,
+    ChannelsUserInfoSetUserinfoStr,
+    ChannelsUserInfoSetAppinfoStr,
     ChannelsUserInfoStr,
 } from '../../config/global_config';
 
@@ -49,13 +51,23 @@ export default function(dispatch, cb) : void {
             }
         });
 
-        //设置用户信息
-        window.electron.ipcRenderer.once(ChannelsUserInfoStr, (uuid, uname, rtime) => {
+        window.electron.ipcRenderer.on(ChannelsUserInfoStr, (action, uuid, uname, rtime) => {
+            if (action !== ChannelsUserInfoSetUserinfoStr) return;
             dispatch({
                 type: SET_DEVICE_INFO,
                 uuid,
                 uname,
                 rtime,
+            });
+        });
+
+        //设置app信息
+        window.electron.ipcRenderer.on(ChannelsUserInfoStr, (action, appName, appVersion) => {
+            if (action !== ChannelsUserInfoSetAppinfoStr) return;
+            dispatch({
+                type: SET_DEVICE_INFO,
+                appName,
+                appVersion
             });
         });
     }

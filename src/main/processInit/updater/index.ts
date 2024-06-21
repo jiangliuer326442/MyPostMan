@@ -6,6 +6,7 @@ import {
     ChannelsAutoUpgradeStr, 
     ChannelsAutoUpgradeCheckStr, 
     ChannelsAutoUpgradeDownloadStr,
+    ChannelsAutoUpgradeLatestStr,
     ChannelsAutoUpgradeNewVersionStr, 
 } from '../../../config/global_config';
 
@@ -20,10 +21,16 @@ export default function (){
 
     ipcMain.on(ChannelsAutoUpgradeStr, (event, action) => {
         if (action !== ChannelsAutoUpgradeCheckStr) return;
-        autoUpdater.checkForUpdates().then(updateCheckResult => {
-            if (updateCheckResult !== null) {
-                event.reply(ChannelsAutoUpgradeStr, ChannelsAutoUpgradeNewVersionStr, updateCheckResult.versionInfo);
+        autoUpdater.checkForUpdates();
+        autoUpdater.on('update-available', (info) => {
+            log.debug("updateCheckResult", info);
+            if (info !== null) {
+                log.debug("updateCheckResult", info);
+                event.reply(ChannelsAutoUpgradeStr, ChannelsAutoUpgradeNewVersionStr, info);
             }
+        });
+        autoUpdater.on('update-not-available', () => {  
+            event.reply(ChannelsAutoUpgradeStr, ChannelsAutoUpgradeLatestStr); 
         });
     });
 

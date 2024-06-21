@@ -1,7 +1,6 @@
 import { Component, ReactNode } from 'react';
 import { connect } from 'react-redux';
-import { Checkbox, Typography, Layout, ConfigProvider, theme, Card, notification, Space, Button} from "antd";
-import zhCN from 'antd/locale/zh_CN';
+import { Checkbox, Typography, Layout, Card, notification, Space, Button} from "antd";
 
 import { 
   ChannelsAutoUpgradeStr, 
@@ -13,7 +12,7 @@ import {
 
 const { Header, Content, Footer } = Layout;
 
-const { Title, Paragraph } = Typography;
+const { Title, Paragraph, Link } = Typography;
 
 class Home extends Component {
 
@@ -75,62 +74,54 @@ class Home extends Component {
 
   render() : ReactNode {
     return (
-      <ConfigProvider 
-      locale={zhCN} 
-      theme={{
-          token: {
-          },
-          algorithm: theme.defaultAlgorithm
-          }}>
-        <Layout>
-            <Header style={{ padding: 0 }}>
-              { this.props.uname } 你好，MyPostMan 感谢您的一路陪伴 
-            </Header>
-            <Content style={{ margin: '0 16px' }}>
-              <div
-                style={{
-                  padding: 24,
-                  minHeight: 360,
-                }}
-              >
-                  <Typography>
-                    <Title>您的隐私数据非常重要！！！</Title>
-                    <Paragraph>
-                      MyPostMan 所有存储内容都是您和您的企业至关重要的数字化财产，由于笔者常年在银行这样的纯内网的环境中从事开发，MyPostMan 所有功能均不需要连接外部网络。所有数据都存储在您的个人电脑中，这样既保证了极高的性能，更重要的是确保了绝对的安全～
-                    </Paragraph>
-                    <Paragraph>
-                      经常备份数据库很重要！鉴于api接口文档对于日常开发的重要性，强烈建议您养成定时备份的好习惯。备份操作路径：顶部菜单-帮助-备份数据库。
-                    </Paragraph>
-                    <Paragraph>
-                      尽管非常希望将这款软件做成无需网络完全单机的，但是检查更新依然需要连接外部网络。新版本能够修复现有软件的一些bug以及能够让您使用到一些新增的功能。
-                    </Paragraph>
-                    <Paragraph>
-                      您自行决定是否使用自动检查更新，如果关闭自动检查更新，强烈建议您定期点击一下手动检查按钮，看一下是否有新的软件版本可用。
-                    </Paragraph>
-                    <Checkbox
-                      checked={this.state.checkAutoUpgrade == 1}
-                      onChange={e => {
-                        if (e.target.checked) {
-                          this.setState({checkAutoUpgrade: 1});
-                          localStorage.setItem(IS_AUTO_UPGRADE, "1");
-                          this.checkForUpgrade();
-                        } else {
-                          this.setState({checkAutoUpgrade: 0});
-                          localStorage.setItem(IS_AUTO_UPGRADE, "0");
-                        }
-                      }}
-                    >开启自动检查更新</Checkbox>
-                    {this.state.checkAutoUpgrade == 0 ? 
-                    <Button type="primary" onClick={this.checkForUpgrade}>手动检查更新</Button>
-                    : null}
-                  </Typography>
-              </div>
-            </Content>
-            <Footer style={{ textAlign: 'center' }}>
-              MyPostMan ©{new Date().getFullYear()} Created by 方海亮
-            </Footer>
-          </Layout>
-          </ConfigProvider>
+      <Layout>
+          <Header style={{ padding: 0 }}>
+            { this.props.uname } 你好，{this.props.appName} 感谢您的一路陪伴 
+          </Header>
+          <Content style={{ margin: '0 16px' }}>
+            <div
+              style={{
+                padding: 24,
+                minHeight: 360,
+              }}
+            >
+                <Typography>
+                  <Title>您的隐私数据非常重要！！！</Title>
+                  <Paragraph>
+                    MyPostMan 所有存储内容都是您和您的企业至关重要的数字化财产，由于笔者常年在银行这样的纯内网的环境中从事开发，MyPostMan 所有功能均不需要连接外部网络。所有数据都存储在您的个人电脑中，这样既保证了极高的性能，更重要的是确保了绝对的安全～
+                  </Paragraph>
+                  <Paragraph>
+                    经常备份数据库很重要！鉴于api接口文档对于日常开发的重要性，强烈建议您养成定时备份的好习惯。备份操作路径：顶部菜单-帮助-备份数据库。
+                  </Paragraph>
+                  <Paragraph>
+                    尽管非常希望将这款软件做成无需网络完全单机的，但是检查更新依然需要连接外部网络。新版本能够修复现有软件的一些bug以及能够让您使用到一些新增的功能。
+                  </Paragraph>
+                  <Paragraph>
+                    您自行决定是否使用自动检查更新，如果关闭自动检查更新，强烈建议您定期点击一下手动检查按钮，看一下是否有新的软件版本可用。也可以经常光顾我们的<Link href="https://gitee.com/onlinetool/mypostman">项目主页</Link>，看看新增了什么你感兴趣的功能。
+                  </Paragraph>
+                  <Checkbox
+                    checked={this.state.checkAutoUpgrade == 1}
+                    onChange={e => {
+                      if (e.target.checked) {
+                        this.setState({checkAutoUpgrade: 1});
+                        localStorage.setItem(IS_AUTO_UPGRADE, "1");
+                        this.checkForUpgrade();
+                      } else {
+                        this.setState({checkAutoUpgrade: 0});
+                        localStorage.setItem(IS_AUTO_UPGRADE, "0");
+                      }
+                    }}
+                  >开启自动检查更新</Checkbox>
+                  {this.state.checkAutoUpgrade == 0 ? 
+                  <Button type="primary" onClick={this.checkForUpgrade}>手动检查更新</Button>
+                  : null}
+                </Typography>
+            </div>
+          </Content>
+          <Footer style={{ textAlign: 'center' }}>
+            MyPostMan ©{new Date().getFullYear()} Created by 方海亮
+          </Footer>
+        </Layout>
     );
   }
 }
@@ -138,6 +129,7 @@ class Home extends Component {
 function mapStateToProps (state) {
   return {
     uname: state.device.uname,
+    appName: state.device.appName,
   }
 }
 

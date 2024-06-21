@@ -1,28 +1,28 @@
 import log from 'electron-log';
-import { ipcMain } from 'electron';
+import { ipcMain, IpcMainEvent } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs-extra';
-import { ChannelsUserInfoStr } from '../../../config/global_config';
+import { ChannelsUserInfoStr, ChannelsUserInfoPingStr, ChannelsUserInfoSetUserinfoStr } from '../../../config/global_config';
 import { registerUser, getUUID, getUName, getRTime } from '../../store/config/user';
 import { uuidPath, writeFile } from '../uuid';
 import { genUUID } from '../../util/util';
 
-let readayEvent = null;
-let intervalId;
+let readayEvent : IpcMainEvent | null = null;
+let intervalId : NodeJS.Timeout;
 
 function notifyUserInfo() {
   if(readayEvent !== null) {
     let uuid = getUUID();
     let uname = getUName();
     let rtime = getRTime();
-    readayEvent.reply(ChannelsUserInfoStr, uuid, uname, rtime);
+    readayEvent.reply(ChannelsUserInfoStr, ChannelsUserInfoSetUserinfoStr, uuid, uname, rtime);
     clearInterval(intervalId);
   }
 }
 
 export default function() {
-  ipcMain.on(ChannelsUserInfoStr, (event, arg) => {
-    if(arg === 'ping') {
+  ipcMain.on(ChannelsUserInfoStr, (event, action) => {
+    if(action === ChannelsUserInfoPingStr) {
       readayEvent = event;
     }
   });

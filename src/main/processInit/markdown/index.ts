@@ -85,6 +85,19 @@ function getServerMarkdownFilePath(iterationUUID : string) : string {
     return markdownStoreFile;
 }
 
+export function getMarkdownContentByIteratorId(iteratorId : string) : string {
+    let markdownStoreFile = getServerMarkdownFilePath(iteratorId);
+
+    let markdownContent = "";
+
+    if ( fs.existsSync(markdownStoreFile)) {
+        //拿 markdown 文件内容
+        markdownContent = fs.readFileSync(markdownStoreFile).toString();
+    }
+
+    return markdownContent;
+}
+
 export default function (){
 
     ipcMain.on(ChannelsMarkdownStr, (event, action, versionIteration) => {

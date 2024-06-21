@@ -1,10 +1,10 @@
 import { Component, ReactNode } from 'react';
 import { connect } from 'react-redux';
-import { Layout, Menu } from "antd";
+import { Layout, Menu, Flex } from "antd";
 import Dexie from 'dexie';
 
 import { DB_NAME } from '../../config/db';
-import { ChannelsUserInfoStr } from '../../config/global_config';
+import { ChannelsUserInfoStr, ChannelsUserInfoPingStr } from '../../config/global_config';
 import registerMessageHook from '../actions/message';
 import { getVersionIterators } from "../actions/version_iterator";
 import { getPrjs } from "../actions/project";
@@ -36,10 +36,8 @@ class Nav extends Component {
     componentDidMount() {
       if (this.props.uuid === "") {
         if('electron' in window) {
-          window.electron.ipcRenderer.sendMessage(ChannelsUserInfoStr, 'ping');
+          window.electron.ipcRenderer.sendMessage(ChannelsUserInfoStr, ChannelsUserInfoPingStr);
           this.cb();
-        } else {
-          alert("无法在当前环境中使用该 app");
         }
       } else {
         this.cb();
@@ -58,14 +56,27 @@ class Nav extends Component {
 
     render() : ReactNode {
         return (
-            <Sider collapsible collapsed={this.state.collapsed} onCollapse={(value) => this.setCollapsed(value)}>
-                <div className="demo-logo-vertical" style={{
-                    height: "32px",
-                    margin: "16px",
-                    background: "rgba(255, 255, 255, .2)",
-                    borderRadius: "6px"
-                    }} />
-                <Menu theme="dark" defaultSelectedKeys={this.props.selected} mode="inline" items={this.props.navs} />
+          <Sider collapsible collapsed={this.state.collapsed} onCollapse={(value) => this.setCollapsed(value)}>
+            <Flex gap="middle" vertical style={{
+              height: "32px",
+              margin: "16px",
+            }}>
+              <h3 style={{lineHeight: 0,
+                color: "#5DE2E7",
+                marginLeft: 5,
+                marginTop: 10,
+                fontSize: 25,
+                fontFamily: "serif"
+              }}>{this.props.appName}</h3>
+              <p style={{
+                color: "#fff",
+                marginTop: -30,
+                fontSize: 10,
+                textAlign: "right",
+                marginRight: 9
+              }}>{this.props.appVersion}</p>
+              </Flex>
+            <Menu theme="dark" defaultSelectedKeys={this.props.selected} mode="inline" items={this.props.navs} />
           </Sider>
         );
     }
@@ -76,6 +87,8 @@ function mapStateToProps (state) {
     uuid: state.device.uuid,
     selected: state.nav.selected,
     navs: state.nav.navs,
+    appName: state.device.appName,
+    appVersion: state.device.appVersion,
   }
 }
 

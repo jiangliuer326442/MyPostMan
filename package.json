@@ -1,37 +1,32 @@
 {
   "name": "MyPostManDebug",
-  "version": "0.0.1",
-  "description": "A foundation for scalable desktop apps",
+  "version": "0.0.2",
+  "description": "是一款类似 PostMan 的接口请求软件",
   "keywords": [
-    "electron",
-    "boilerplate",
-    "react",
-    "typescript",
-    "ts",
-    "sass",
-    "webpack",
-    "hot",
-    "reload"
+    "postman",
+    "项目接口管理",
+    "迭代文档",
+    "自动化测试"
   ],
-  "homepage": "https://github.com/electron-react-boilerplate/electron-react-boilerplate#readme",
+  "homepage": "https://gitee.com/onlinetool/mypostman",
   "bugs": {
-    "url": "https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues"
+    "url": "https://gitee.com/onlinetool/mypostman/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/electron-react-boilerplate/electron-react-boilerplate.git"
+    "url": "git+https://gitee.com/onlinetool/mypostman.git"
   },
   "license": "MIT",
   "author": {
-    "name": "Electron React Boilerplate Maintainers",
-    "email": "electronreactboilerplate@gmail.com",
-    "url": "https://electron-react-boilerplate.js.org"
+    "name": "方海亮",
+    "email": "fanghailiang2016@gmail.com",
+    "url": "https://gitee.com/onlinetool/mypostman"
   },
   "contributors": [
     {
-      "name": "Amila Welihinda",
-      "email": "amilajack@gmail.com",
-      "url": "https://github.com/amilajack"
+      "name": "方海亮",
+      "email": "fanghailiang2016@gmail.com",
+      "url": "https://gitee.com/onlinetool/mypostman"
     }
   ],
   "main": "./src/main/main.ts",
@@ -110,8 +105,10 @@
     "electron-log": "^4.4.8",
     "electron-store": "^8.2.0",
     "electron-updater": "^6.1.4",
+    "express": "^4.19.2",
     "fs-extra": "^11.2.0",
     "github-markdown-css": "^5.5.1",
+    "http-proxy-middleware": "^3.0.0",
     "indexeddb-export-import": "^2.1.5",
     "js-md5": "^0.8.3",
     "less": "^4.2.0",
@@ -142,6 +139,7 @@
     "@testing-library/jest-dom": "^6.1.3",
     "@testing-library/react": "^14.0.0",
     "@types/base-64": "^1.0.2",
+    "@types/detect-port": "^1.3.5",
     "@types/jest": "^29.5.5",
     "@types/lodash": "^4.17.4",
     "@types/markdown-navbar": "^1.4.4",

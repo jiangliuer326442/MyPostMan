@@ -54,7 +54,7 @@ class MyRouter extends Component {
                 <HashRouter>
                     <Fragment>
                         <Layout style={{ minHeight: '100vh' }}>
-                            <Nav />
+                            {'electron' in window ? <Nav /> : null}
                             <Layout>
                                 <Switch>
                                     <Route path={ ENV_LIST_ROUTE } component={EnvListPage} />

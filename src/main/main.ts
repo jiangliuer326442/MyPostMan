@@ -11,6 +11,12 @@
 import path from 'path';
 import { app, BrowserWindow, shell } from 'electron';
 import log from 'electron-log';
+import detectPort from 'detect-port';
+import express from 'express';
+import chalk from 'chalk';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import { getMarkdownContentByIteratorId } from './processInit/markdown';
+import { GLobalPort, DevHtmlPort } from '../config/global_config';
 import MenuBuilder from './menu';
 import { resolveHtmlPath, getAssetPath } from './util/util';
 import GlobalInitFunc from "./processInit/index";
@@ -41,6 +47,51 @@ const installExtensions = async () => {
     )
     .catch(log.error);
 };
+
+const startServer = (cb) => {
+  let port = process.env.FORMAL_PORT || GLobalPort;
+  detectPort(port, (_err, availablePort) => {
+      if (port != availablePort) {
+        throw new Error(
+          chalk.whiteBright.bgRed.bold(
+            `Port "${port}" on "localhost" is already in use`,
+          ),
+        );
+      }
+      let app = express();
+      let staticPath = "";
+      if (process.env.NODE_ENV === 'development') {
+        const apiProxy = createProxyMiddleware({  
+          target: 'http://localhost:' + DevHtmlPort + '/proxy/',
+        });
+        app.use('/proxy', apiProxy); 
+      } else {
+        staticPath = path.resolve(__dirname, '../renderer/');
+        app.use(express.static(staticPath));  
+      }
+      app.use(express.urlencoded({ extended: true }));
+      app.get('*', (req, res) => {
+        if (process.env.NODE_ENV !== 'development') {
+          res.sendFile(path.join(staticPath, 'index.html'));
+        }
+      });
+      app.post('/sprint/docs', (req, res) => {
+        let iteratorId = req.body.iteratorId;
+        let content = getMarkdownContentByIteratorId(iteratorId);
+        const data = {
+          code: 1000,
+          message: '',
+          data: {
+            markdown: content
+          }
+        };
+        res.json(data);
+      });
+      app.listen(port, () => {  
+          cb();
+      });
+  });
+}
 
 const createWindow = async () => {
   // if (isDebug) {
@@ -112,7 +163,9 @@ app.on('window-all-closed', () => {
 app
   .whenReady()
   .then(() => {
-    createWindow();
+    startServer(() => {
+      createWindow(); 
+    });
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.
