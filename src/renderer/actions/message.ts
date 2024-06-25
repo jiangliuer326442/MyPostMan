@@ -1,14 +1,21 @@
 import IDBExportImport from 'indexeddb-export-import';
 
 import { 
+    ChannelsMarkdownStr,
     ChannelsDbStr, 
     ChannelsDbExportStr,
     ChannelsDbWriteStr,
     ChannelsDbImportStr,
+    ChannelsMarkdownQueryStr,
+    ChannelsMarkdownQueryResultStr,
     ChannelsUserInfoSetUserinfoStr,
     ChannelsUserInfoSetAppinfoStr,
     ChannelsUserInfoStr,
 } from '../../config/global_config';
+
+import { getPrjs } from '../actions/project';
+import { getVersionIterator } from '../actions/version_iterator';
+import { getVersionIteratorRequestsByProject } from '../actions/version_iterator_requests';
 
 import { SET_DEVICE_INFO } from '../../config/redux';
 
@@ -51,6 +58,16 @@ export default function(dispatch, cb) : void {
             }
         });
 
+        //刷迭代文档
+        window.electron.ipcRenderer.on(ChannelsMarkdownStr, async (action, iteratorId) => {
+            if (action !== ChannelsMarkdownQueryStr) return;
+            let prjs = await getPrjs(null);
+            let versionIteration = await getVersionIterator(iteratorId);
+            let requests = await getVersionIteratorRequestsByProject(iteratorId, "", null, "", "");
+            window.electron.ipcRenderer.sendMessage(ChannelsMarkdownStr, ChannelsMarkdownQueryResultStr, versionIteration, requests, prjs);
+        });
+
+        //设置用户信息
         window.electron.ipcRenderer.on(ChannelsUserInfoStr, (action, uuid, uname, rtime) => {
             if (action !== ChannelsUserInfoSetUserinfoStr) return;
             dispatch({
@@ -62,10 +79,12 @@ export default function(dispatch, cb) : void {
         });
 
         //设置app信息
-        window.electron.ipcRenderer.on(ChannelsUserInfoStr, (action, appName, appVersion) => {
+        window.electron.ipcRenderer.on(ChannelsUserInfoStr, (action, html, ip, appName, appVersion) => {
             if (action !== ChannelsUserInfoSetAppinfoStr) return;
             dispatch({
                 type: SET_DEVICE_INFO,
+                html,
+                ip,
                 appName,
                 appVersion
             });

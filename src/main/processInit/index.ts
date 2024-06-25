@@ -9,7 +9,7 @@ import ProductInitFunc from './product';
 export default function (mainWindow : BrowserWindow){
     userInitFunc();
     windowInitFunc(mainWindow);
-    MarkdownInitFunc();
+    MarkdownInitFunc(mainWindow);
     PostManInitFunc();
     UpdaterInitFunc();
     ProductInitFunc();

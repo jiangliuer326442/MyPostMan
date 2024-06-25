@@ -44,7 +44,7 @@ export async function getKeys(prj) {
 
 export async function getEnvValues(prj, env, dispatch, cb) : Promise<Array<any>> {
     await window.db.open();
-
+    
     const env_vars = []; 
     let envKeys = await window.db[TABLE_ENV_KEY_NAME]
     .where('[' + env_key_delFlg + '+' + env_key_prj + ']')

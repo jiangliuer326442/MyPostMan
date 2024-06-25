@@ -20,22 +20,16 @@ class IteratorDoc extends Component {
         sessionStorage.setItem("iterator_doc_iteratorId", iteratorId);
         this.state = {
             iteratorId,
-            versionIteration: {},
-            requests: [],
-            prjs: [],
             md: "",
+            versionIteration: "",
+            requests: [],
+            prjs: []
         };
     }
 
-    componentDidMount(): void {
+    async componentDidMount() {
         if('electron' in window) {
-            if(this.props.prjs.length === 0) {
-                getPrjs(this.props.dispatch).then(prjs => this.setState( { prjs }, this.loadMarkDownFromElectron ));
-            } else {
-                this.setState( { prjs: this.props.prjs }, this.loadMarkDownFromElectron );
-            }
-            getVersionIterator(this.state.iteratorId).then(versionIteration => this.setState( { versionIteration }, this.loadMarkDownFromElectron ));
-            getVersionIteratorRequestsByProject(this.state.iteratorId, "", null, "", "").then(requests => this.setState( { requests }, this.loadMarkDownFromElectron ));
+            this.loadMarkDownFromElectron(this.state.iteratorId);
         } else {
             try {
                 axios.post("/sprint/docs", { 
@@ -53,11 +47,17 @@ class IteratorDoc extends Component {
         }
     }
 
-    loadMarkDownFromElectron = () => {
-        if(this.state.prjs.length > 0 && this.state.requests.length > 0 && Object.keys(this.state.versionIteration).length > 0) {
-            window.electron.ipcRenderer.sendMessage(ChannelsMarkdownStr, ChannelsMarkdownShowStr, this.state.versionIteration, this.state.requests, this.state.prjs);
+    loadMarkDownFromElectron = async (iteratorId : string) => {
+        let prjs = await getPrjs(null);
+        let versionIteration = await getVersionIterator(iteratorId);
+        let requests = await getVersionIteratorRequestsByProject(iteratorId, "", null, "", "");
 
-            window.electron.ipcRenderer.on(ChannelsMarkdownStr, (action, iteratorId, markdownContent) => {
+        this.setState({prjs, versionIteration, requests});
+
+        if(prjs.length > 0 && requests.length > 0 && Object.keys(versionIteration).length > 0) {
+            window.electron.ipcRenderer.sendMessage(ChannelsMarkdownStr, ChannelsMarkdownShowStr, versionIteration, requests, prjs);
+
+            window.electron.ipcRenderer.on(ChannelsMarkdownStr, (action, iteratorId, markdownTitle, markdownContent) => {
                 if (action !== ChannelsMarkdownShowStr) return;
                 if(iteratorId === this.state.iteratorId) {
                     this.setState( { md : markdownContent } );
@@ -70,7 +70,11 @@ class IteratorDoc extends Component {
         return (
             <Layout>
                 <Header style={{ padding: 0 }}>
-                    <a href={ "#/version_iterator_doc/" + this.state.iteratorId } target="_blank">迭代文档（点击用浏览器打开）</a >
+                    {'electron' in window ?
+                    <a href={ this.props.html.replace("localhost", this.props.ip) + "#/version_iterator_doc/" + this.state.iteratorId } target="_blank">迭代文档（点击用浏览器打开）</a >
+                    :
+                    "迭代文档"
+                    }
                 </Header>
                 <Content style={{ margin: '0 16px' }}>
                     <Breadcrumb style={{ margin: '16px 0' }} items={[
@@ -91,13 +95,13 @@ class IteratorDoc extends Component {
                             icon={<Html5Outlined/>} 
                             description="html"
                             shape="square"
-                            onClick={()=>window.electron.ipcRenderer.sendMessage(ChannelsMarkdownStr, ChannelsMarkdownSaveHtmlStr, this.state.versionIteration)} 
+                            onClick={()=>window.electron.ipcRenderer.sendMessage(ChannelsMarkdownStr, ChannelsMarkdownSaveHtmlStr, this.state.versionIteration, this.state.requests, this.state.prjs)} 
                         />
                         <FloatButton 
                             icon={<FileMarkdownOutlined />} 
                             description="md"
                             shape="square"
-                            onClick={ ()=> window.electron.ipcRenderer.sendMessage(ChannelsMarkdownStr, ChannelsMarkdownSaveMarkdownStr, this.state.versionIteration) } 
+                            onClick={ ()=> window.electron.ipcRenderer.sendMessage(ChannelsMarkdownStr, ChannelsMarkdownSaveMarkdownStr, this.state.versionIteration, this.state.requests, this.state.prjs) } 
                         />
                     </FloatButton.Group>
                     :null}
@@ -114,6 +118,8 @@ class IteratorDoc extends Component {
 function mapStateToProps (state) {
     return {
         prjs: state.prj.list,
+        html: state.device.html,
+        ip: state.device.ip,
     }
 }
       

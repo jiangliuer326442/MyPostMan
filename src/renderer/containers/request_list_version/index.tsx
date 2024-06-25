@@ -96,8 +96,7 @@ class RequestListVersion extends Component {
                     title: '操作',
                     key: 'operater',
                     render: (_, record) => {
-                        let urlStr = encode(this.state.iteratorId + "$$" + record[iteration_request_prj] + "$$" + record[iteration_request_method] + "$$" + record[iteration_request_uri]);
-                        let url = "#/version_iterator_request/" + urlStr;
+                        let url = "#/version_iterator_request/" + this.state.iteratorId + "/" + record[iteration_request_prj] + "/" + record[iteration_request_method] + "/" + encode(record[iteration_request_uri]);
                         return (
                             <Space size="middle">
                                 <Button type="link" icon={<EyeOutlined />} href={ url } />

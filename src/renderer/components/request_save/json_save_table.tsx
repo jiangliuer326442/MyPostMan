@@ -1,10 +1,7 @@
 import { Component, ReactNode } from 'react';
 import { connect } from 'react-redux';
 import { cloneDeep } from 'lodash';
-
-import {
-    Table, Input
-} from "antd";
+import { Table, Input } from "antd";
 
 import {
     TABLE_FIELD_NAME,
@@ -14,6 +11,8 @@ import {
     parseJsonToChildren,
     genHash,
 } from '../../util/json';
+
+import { CONTENT_TYPE } from '../../../config/global_config';
 
 import { getJsonFragment } from '../../actions/request_save';
 
@@ -52,8 +51,10 @@ class JsonSaveTableContainer extends Component {
                 {
                     title: '示例',
                     dataIndex: TABLE_FIELD_VALUE,
-                    render: (demo) => {
-                        if(demo != null && demo.length > 20) {
+                    render: (demoRaw : any, row : any) => {
+                        let key = row.key;
+                        let demo = cloneDeep(demoRaw);
+                        if(key !== CONTENT_TYPE && demo != null && demo.length > 20) {
                             return demo.substring(0, 20) + "...";
                         }
                         return demo;

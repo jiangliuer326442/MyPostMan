@@ -16,10 +16,12 @@ export async function getPrjs(dispatch) {
     .reverse()
     .toArray();
 
-    dispatch({
-        type: GET_PRJS,
-        prjs
-    });
+    if (dispatch !== null) {
+        dispatch({
+            type: GET_PRJS,
+            prjs
+        });
+    }
     return prjs;
 }
 

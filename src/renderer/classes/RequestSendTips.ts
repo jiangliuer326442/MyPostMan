@@ -10,7 +10,8 @@ import {
   TABLE_ENV_VAR_FIELDS,
 } from '../../config/db';
 import { getEnvValues, getKeys } from '../actions/env_value';
-import { isStringEmpty } from '../util';
+import { getType, isStringEmpty } from '../util';
+import { cloneDeep } from 'lodash';
 
 let env_var_pname = TABLE_ENV_VAR_FIELDS.FIELD_PARAM_NAME;
 let env_var_pvalue = TABLE_ENV_VAR_FIELDS.FIELD_PARAM_VAR;
@@ -82,6 +83,12 @@ export default class {
         }
     }
 
+    iteratorGetVarByKey(postData : any) : any {
+        postData = cloneDeep (postData);
+        this.iteratorGetEnvValue(postData);
+        return postData;
+    }
+
     getVarByKey(key : string) : string | undefined {
         if (key === ENV_VALUE_RANDOM_STRING) {
             return uuidv4() as string;
@@ -96,6 +103,37 @@ export default class {
         }
 
         return this.envKeyVar.get(key);
+    }
+
+    private iteratorGetEnvValue(postData : any) {
+        for (let _key in postData) {
+            let value = postData[_key];
+            if (getType(value) === "Array") {
+                for (let _index in value) {
+                    let _item = value[_index];
+                    if (getType(_item) === "Object") {
+                        this.iteratorGetEnvValue(_item);
+                    } else {
+                        let beginIndex = value[_index].indexOf("{{");
+                        let endIndex = value[_index].indexOf("}}");
+                        if (beginIndex >= 0 && endIndex >= 0 && beginIndex < endIndex) {
+                            let envValueKey = value[_index].substring(beginIndex + 2, endIndex);
+                            value[_index] = this.getVarByKey(envValueKey);
+                        }
+                    }
+                }
+            } else if (getType(value) === "Object") {
+                this.iteratorGetEnvValue(value);
+            } else {
+                let beginIndex = value.indexOf("{{");
+                let endIndex = value.indexOf("}}");
+                if (beginIndex >= 0 && endIndex >= 0 && beginIndex < endIndex) {
+                    let envValueKey = value.substring(beginIndex + 2, endIndex);
+                    value = this.getVarByKey(envValueKey);
+                    postData[_key] = value;
+                }
+            }
+        }
     }
 
     private getApiHost() : string {

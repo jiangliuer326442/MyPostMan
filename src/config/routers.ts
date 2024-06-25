@@ -15,13 +15,15 @@ export const INTERNET_REQUEST = "/internet_request_send";
 //根据请求历史获得网络请求
 export const INTERNET_REQUEST_BY_HISTORY_ROUTE = "/internet_request_send_by_history/:id";
 //根据迭代 api 获得网络请求
-export const INTERNET_REQUEST_BY_API_ROUTE = "/internet_request_send_by_api/:params";
+export const INTERNET_REQUEST_BY_API_ROUTE = "/internet_request_send_by_api/:iteratorId/:prj/:method/:uri";
 //保存到迭代
-export const REQUEST_TO_ITERATOR_ROUTE = "/request_to_interator/:id";
+export const REQUEST_TO_ITERATOR_ROUTE = "/request_to_interator/:versionIteratorId/:historyId";
+//从历史记录保存到迭代
+export const HISTORY_REQUEST_TO_ITERATOR_ROUTE = "/history_request_to_interator/:historyId";
 //迭代接口列表
 export const REQUEST_ITERATOR_LIST_ROUTE = "/version_iterator_requests/:id"
 //迭代接口详情
-export const REQUEST_ITERATOR_DETAIL_ROUTE = "/version_iterator_request/:params"
+export const REQUEST_ITERATOR_DETAIL_ROUTE = "/version_iterator_request/:iteratorId/:prj/:method/:uri"
 //迭代单测列表
 export const UNITTEST_ITERATOR_LIST_ROUTE = "/version_iterator_tests/:id"
 //迭代单测执行列表

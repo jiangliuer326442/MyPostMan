@@ -11,6 +11,7 @@ import { isStringEmpty, removeWithoutGap } from "../../util";
 import { 
     CONTENT_TYPE_URLENCODE,
     CONTENT_TYPE_FORMDATA,
+    CONTENT_TYPE_JSON,
 } from "../../../config/global_config"
 
 class RequestSendHead extends Component {
@@ -46,7 +47,11 @@ class RequestSendHead extends Component {
         this.setState({ data });
     }
 
-    setValue = (value, i) => {
+    setContentType = (contentType : string) => {
+        this.setValue(contentType, 0);
+    }
+
+    setValue = (value : string, i : number) => {
         if(!isStringEmpty(value) && i === this.state.rows) {
             let row = {};
             row.value = value;
@@ -119,10 +124,11 @@ class RequestSendHead extends Component {
                             <Select
                                 defaultValue={this.state.data[i].value}
                                 style={{ width: "100%" }}
-                                onChange={value => this.setValue(value, i)}
+                                onChange={ this.setContentType }
                                 options={[
                                     { value: CONTENT_TYPE_URLENCODE, label: CONTENT_TYPE_URLENCODE },
                                     { value: CONTENT_TYPE_FORMDATA, label: CONTENT_TYPE_FORMDATA },
+                                    { value: CONTENT_TYPE_JSON, label: CONTENT_TYPE_JSON },
                                 ]}
                                 />
                             </Flex>

@@ -17,7 +17,8 @@ import {
   paramToString,
 } from '../../util';
 import {
-  isJsonString
+  isJsonString,
+  cleanJson
 } from '../../util/json';
 import { ENV_VALUE_API_HOST } from "../../../config/envKeys";
 import { 
@@ -27,12 +28,11 @@ import {
 } from '../../../config/db';
 import {
   REQUEST_METHOD_GET,
-  REQUEST_METHOD_POST
-} from '../../../config/global_config';
-import { 
+  REQUEST_METHOD_POST,
+  CONTENT_TYPE_JSON,
   CONTENT_TYPE,
   CONTENT_TYPE_URLENCODE,
-} from "../../../config/global_config"
+} from '../../../config/global_config';
 import { TABLE_FIELD_VALUE } from '../../util/json';
 import RequestSendTips from '../../classes/RequestSendTips';
 import {
@@ -90,6 +90,7 @@ class RequestSendContainer extends Component {
       requestEnable: false,
       showFlg: false,
       requestMethod: REQUEST_METHOD_POST,
+      contentType: CONTENT_TYPE_URLENCODE,
       defaultTabKey: "body",
       responseData: "",
       isResonseJson: false,
@@ -97,9 +98,11 @@ class RequestSendContainer extends Component {
       requestBodyData: {},
       requestParamData: {},
       isResponseHtml: false,
+      versionIterator: "",
       alertMessage: "",
       envKeys: [],
     }
+
     this.requestSendTip = new RequestSendTips();
   }
 
@@ -117,6 +120,8 @@ class RequestSendContainer extends Component {
     } else if ( 'id' in this.props.match.params) {
       let key = Number(this.props.match.params.id);
       getRequestHistory(key, record => {
+        let headerData = record[request_history_head];
+        let contentType = headerData[CONTENT_TYPE];
         this.setState({
           id: key,
           showFlg: true,
@@ -127,22 +132,21 @@ class RequestSendContainer extends Component {
           responseData: record[request_history_response],
           isResonseJson: record[request_history_jsonFlg],
           isResponseHtml: record[request_history_htmlFlg],
-          requestHeadData: record[request_history_head],
+          requestHeadData: headerData,
+          contentType,
           requestBodyData: record[request_history_body],
           requestParamData: record[request_history_param],
         });
       });
-    } else if ( 'params' in this.props.match.params) {
-      let param = this.props.match.params.params;
-      let paramArr = decode(param).split("$$");
-      let versionIterator = paramArr[0];
-      let prj = paramArr[1];
-      let requestMethod = paramArr[2];
-      let requestUri = paramArr[3];
+    } else if ( 'iteratorId' in this.props.match.params) {
+      let versionIterator = this.props.match.params.iteratorId;
+      let prj = this.props.match.params.prj;
+      let requestMethod = this.props.match.params.method;
+      let requestUri = decode(this.props.match.params.uri);
       let uri = "";
       let method = "";
       let body = {};
-      let header = {};
+      let header : any = {};
       let requestParam = {};
       if (isStringEmpty(versionIterator)) {
         let record = await getProjectRequest(prj, requestMethod, requestUri);
@@ -161,23 +165,16 @@ class RequestSendContainer extends Component {
         header = record[iteration_request_header];
         requestParam = record[iteration_request_param];
       }
-      
-      let requestBodyData = {};
-      for (let _key in body) {
-        requestBodyData[_key] = body[_key][TABLE_FIELD_VALUE];
-      }
-      let requestHeadData = {};
-      for (let _key in header) {
-        requestHeadData[_key] = header[_key][TABLE_FIELD_VALUE];
-      }
-      let requestParamData = {};
-      for (let _key in requestParam) {
-        requestParamData[_key] = requestParam[_key][TABLE_FIELD_VALUE];
-      }
+      let requestBodyData = cleanJson(body);
+      let requestHeadData = cleanJson(header);
+      let requestParamData = cleanJson(requestParam);
+      let contentType = requestHeadData[CONTENT_TYPE];
       this.setState({
         showFlg: true,
+        versionIterator,
         prj,
         requestUri: uri,
+        contentType,
         requestMethod: method,
         requestHeadData,
         requestBodyData,
@@ -206,6 +203,25 @@ class RequestSendContainer extends Component {
   };
 
   setRequestBodyData = (data: Array<any>) => {
+    if (this.state.contentType === CONTENT_TYPE_JSON) {
+      this.state.requestBodyData = JSON.parse(data);
+    } else {
+      let obj = {};
+      if (data.length > 0) {
+        for (let item of data) {
+          let value = item.value;
+          if (getType(value) === "Undefined") {
+            value = "";
+          }
+          obj[item.key] = value;
+        }
+      }
+      this.state.requestBodyData = obj;
+    }
+  }
+
+  setRequestHeadData = (data: Array<any>) => {
+    let contentType = data.find(item => item.key === CONTENT_TYPE).value;
     let obj = {};
     if (data.length > 0) {
       for (let item of data) {
@@ -216,19 +232,8 @@ class RequestSendContainer extends Component {
         obj[item.key] = value;
       }
     }
-    this.state.requestBodyData = obj;
-  }
-
-  setRequestHeadData = (data: Array<any>) => {
-    let obj = {};
-    if (data.length > 0) {
-      for (let item of data) {
-        let value = item.value;
-        if (getType(value) === "Undefined") {
-          value = "";
-        }
-        obj[item.key] = value;
-      }
+    if (contentType !== this.state.contentType) {
+      this.setState({contentType});
     }
     this.state.requestHeadData = obj;
   }
@@ -305,17 +310,7 @@ class RequestSendContainer extends Component {
       }
     }
     if (this.state.requestMethod === REQUEST_METHOD_POST) {
-      let postData = cloneDeep(this.state.requestBodyData);
-      for (let _key in postData) {
-        let value = postData[_key];
-        let beginIndex = value.indexOf("{{");
-        let endIndex = value.indexOf("}}");
-        if (beginIndex >= 0 && endIndex >= 0 && beginIndex < endIndex) {
-          let envValueKey = value.substring(beginIndex + 2, endIndex);
-          value = this.requestSendTip.getVarByKey(envValueKey);
-          postData[_key] = value;
-        }
-      }
+      let postData = this.requestSendTip.iteratorGetVarByKey(this.state.requestBodyData);
       try {
         response = await axios.post(url, postData, {
           headers: headData
@@ -350,15 +345,19 @@ class RequestSendContainer extends Component {
   }
 
   calculateFormBodyData = (requestBodyData) => {
-    let list = [];
-    for (let _key in requestBodyData) {
-        let item = {};
-        item["key"] = _key;
-        item["value"] = requestBodyData[_key];
-        list.push(item);
+    if (this.state.contentType === CONTENT_TYPE_JSON) {
+      return JSON.stringify(requestBodyData);
+    } else {
+      let list = [];
+      for (let _key in requestBodyData) {
+          let item = {};
+          item["key"] = _key;
+          item["value"] = requestBodyData[_key];
+          list.push(item);
+      }
+      this.setRequestBodyData(list);
+      return list;
     }
-    this.setRequestBodyData(list);
-    return list;
   }
 
   calculateFormHeadData = (requestHeadData) => {
@@ -371,7 +370,7 @@ class RequestSendContainer extends Component {
     }
     let data = list.length === 0 ? [{
         key: CONTENT_TYPE,
-        value: CONTENT_TYPE_URLENCODE,
+        value: this.state.contentType,
     }] : list;
     this.setRequestHeadData(data);
     return data;
@@ -399,12 +398,21 @@ class RequestSendContainer extends Component {
       {
         key: 'headers',
         label: '头部',
-        children: <RequestSendHead obj={ this.calculateFormHeadData(this.state.requestHeadData) } tips={this.state.envKeys} cb={this.setRequestHeadData} />,
+        children: <RequestSendHead 
+          obj={ this.calculateFormHeadData(this.state.requestHeadData) } 
+          tips={this.state.envKeys} 
+          cb={this.setRequestHeadData} 
+          />,
       },
       {
         key: 'body',
         label: '主体',
-        children: <RequestSendBody obj={ this.calculateFormBodyData(this.state.requestBodyData) } tips={this.state.envKeys} cb={this.setRequestBodyData} />,
+        children: <RequestSendBody 
+          obj={ this.calculateFormBodyData(this.state.requestBodyData) } 
+          tips={ this.state.envKeys } 
+          contentType={ this.state.contentType }
+          cb={this.setRequestBodyData} 
+        />,
       },
     ];
   }
@@ -428,9 +436,9 @@ class RequestSendContainer extends Component {
                   <Button 
                       type="primary" 
                       disabled={this.state.id === 0 || !this.state.isResonseJson}
-                      href={ "#/request_to_interator/" + this.state.id}
+                      href={ isStringEmpty(this.state.versionIterator) ? "#/history_request_to_interator/" + this.state.id : "#/request_to_interator/" + this.state.versionIterator + "/" + this.state.id}
                       style={ { background: "#3b3b3b", color: "rgba(255, 255, 255, 0.5)"} }
-                    >保存</Button>
+                  >保存</Button>
                 </Flex>
                 <Flex>
                     <Select 

@@ -18,6 +18,10 @@ export const ChannelsMarkdownStr = 'pipeline_markdown';
 
 export const ChannelsMarkdownShowStr = 'pipeline_markdown_show';
 
+export const ChannelsMarkdownQueryStr = 'pipeline_markdown_query';
+
+export const ChannelsMarkdownQueryResultStr = 'pipeline_markdown_query_result';
+
 export const ChannelsMarkdownSaveMarkdownStr = 'pipeline_markdown_save_markdown';
 
 export const ChannelsMarkdownSaveHtmlStr = 'pipeline_markdown_save_html';
@@ -63,6 +67,10 @@ export const UNAME = "device.uname";
 
 export const REG_TIME = "device.rtime";
 
+export const HTML = "app.html";
+
+export const IP = "app.ip";
+
 export const APPNAME = "app.name";
 
 export const APPVERSION = "app.version";
@@ -90,6 +98,8 @@ export const CONTENT_TYPE = "Content-Type";
 export const CONTENT_TYPE_URLENCODE = "application/x-www-form-urlencoded";
 
 export const CONTENT_TYPE_FORMDATA = "multipart/form-data";
+
+export const CONTENT_TYPE_JSON = "application/json";
 
 export const GLobalPort = 4343;
 

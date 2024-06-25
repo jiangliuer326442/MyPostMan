@@ -1,5 +1,5 @@
 import log from 'electron-log';
-import { ipcMain, app, dialog } from 'electron';
+import { BrowserWindow, ipcMain, app, dialog } from 'electron';
 import fs from 'fs-extra';
 import * as Showdown from 'showdown';
 
@@ -8,10 +8,11 @@ import {
     TABLE_VERSION_ITERATION_REQUEST_FIELDS,
     TABLE_MICRO_SERVICE_FIELDS,
 } from '../../../config/db';
-import { getSalt, setIteratorCache } from '../../store/config/markdown';
 import { 
     ChannelsMarkdownStr, 
     ChannelsMarkdownShowStr,
+    ChannelsMarkdownQueryStr,
+    ChannelsMarkdownQueryResultStr,
     ChannelsMarkdownSaveMarkdownStr, 
     ChannelsMarkdownSaveHtmlStr,
 } from '../../../config/global_config';
@@ -40,6 +41,11 @@ let iteration_request_param = TABLE_VERSION_ITERATION_REQUEST_FIELDS.FIELD_REQUE
 let iteration_response = TABLE_VERSION_ITERATION_REQUEST_FIELDS.FIELD_RESPONSE_CONTENT;
 let iteration_response_demo = TABLE_VERSION_ITERATION_REQUEST_FIELDS.FIELD_RESPONSE_DEMO;
 
+let window : BrowserWindow;
+
+let iteratorId;
+
+let res;
 
 /**
  * 迭代生成返回值文档
@@ -55,8 +61,8 @@ function iteratorObjectToArr(returnList, parentKey, jsonObject) {
         let fieldName = isStringEmpty(parentKey) ? _key : (parentKey + "." + _key);
         let remark = _object[TABLE_FIELD_REMARK];
         let type = _object[TABLE_FIELD_TYPE];
-        let value = _object[TABLE_FIELD_VALUE] ? (_object[TABLE_FIELD_VALUE].length > 20 ? _object[TABLE_FIELD_VALUE].substring(0, 20) : _object[TABLE_FIELD_VALUE]) : "";
-        let _item = {};
+        let value = _object[TABLE_FIELD_VALUE] ? _object[TABLE_FIELD_VALUE] : "";
+        let _item : any = {};
         _item[TABLE_FIELD_NAME] = fieldName;
         _item[TABLE_FIELD_REMARK] = remark;
         _item[TABLE_FIELD_TYPE] = type;
@@ -80,30 +86,38 @@ function iteratorObjectToArr(returnList, parentKey, jsonObject) {
     }
 }
 
-function getServerMarkdownFilePath(iterationUUID : string) : string {
-    let markdownStoreFile = app.getPath("userData") + "/markdown/" + iterationUUID + "/index.md";
-    return markdownStoreFile;
+export function getMarkdownContentByIteratorId(paramIteratorId : string, paramRes) {
+
+    window.webContents.send(ChannelsMarkdownStr, ChannelsMarkdownQueryStr, paramIteratorId);
+
+    iteratorId = paramIteratorId;
+    res = paramRes;
 }
 
-export function getMarkdownContentByIteratorId(iteratorId : string) : string {
-    let markdownStoreFile = getServerMarkdownFilePath(iteratorId);
+export default function (mainWindow : BrowserWindow){
 
-    let markdownContent = "";
+    window = mainWindow;
 
-    if ( fs.existsSync(markdownStoreFile)) {
-        //拿 markdown 文件内容
-        markdownContent = fs.readFileSync(markdownStoreFile).toString();
-    }
+    ipcMain.on(ChannelsMarkdownStr, (event, action, versionIteration, version_iteration_requests, prjs) => {
+        if (action !== ChannelsMarkdownQueryResultStr) return;
+        let iterationUUID = versionIteration[version_iterator_uuid];
+        if (iterationUUID === iteratorId) {
+            let markdownContent = getMarkDownContent(versionIteration, version_iteration_requests, prjs);
+            const data = {
+                code: 1000,
+                message: '',
+                data: {
+                  markdown: markdownContent
+                }
+            };
+            res.json(data);
+        }
+    });
 
-    return markdownContent;
-}
-
-export default function (){
-
-    ipcMain.on(ChannelsMarkdownStr, (event, action, versionIteration) => {
+    //导出迭代文档
+    ipcMain.on(ChannelsMarkdownStr, (event, action, versionIteration, version_iteration_requests, prjs) => {
         if (action !== ChannelsMarkdownSaveHtmlStr) return;
 
-        let iterationUUID = versionIteration[version_iterator_uuid];
         let iterationTitle = versionIteration[version_iterator_title];
 
         let filePath = dialog.showSaveDialogSync({
@@ -114,8 +128,7 @@ export default function (){
             ]
         });
 
-        let markdownStoreFile = getServerMarkdownFilePath(iterationUUID);
-        let markdownContent = fs.readFileSync(markdownStoreFile).toString();
+        let markdownContent = getMarkDownContent(versionIteration, version_iteration_requests, prjs);
 
         let converter = new Showdown.Converter({
             omitExtraWLInCodeBlocks: true,
@@ -129,18 +142,18 @@ export default function (){
         });
 
         let html = converter.makeHtml(markdownContent);
+        html = "<style>\nimg {width: 40%;}\ntable { width: 100%; }\ntable { border-collapse: collapse; }\ntable thead { height: 29px; }\ntable thead th { border: 1px solid #525252; }\ntable tbody { height: 24px; }\ntable th { text-align: center; }\ntable td { text-align: left; }</style>\n\n" + html;
 
         fs.writeFile(filePath, html, err => {
             if (err != null) {
-                log.error("保存文件到 html 失败：src=" + markdownStoreFile + ",dist=" + filePath, err);
+                log.error("保存文件到 html 失败", err);
             }
         });
     });
 
-    ipcMain.on(ChannelsMarkdownStr, (event, action, versionIteration) => {
+    ipcMain.on(ChannelsMarkdownStr, (event, action, versionIteration, version_iteration_requests, prjs) => {
         if (action !== ChannelsMarkdownSaveMarkdownStr) return;
 
-        let iterationUUID = versionIteration[version_iterator_uuid];
         let iterationTitle = versionIteration[version_iterator_title];
 
         let filePath = dialog.showSaveDialogSync({
@@ -151,137 +164,126 @@ export default function (){
             ]
         });
 
-        let markdownStoreFile = getServerMarkdownFilePath(iterationUUID);
-
-        fs.copyFile(markdownStoreFile, filePath, err => {
+        let markdownContent = getMarkDownContent(versionIteration, version_iteration_requests, prjs);
+        fs.writeFile(filePath, markdownContent, err => {
             if (err != null) {
-                log.error("拷贝文件失败：src=" + markdownStoreFile + ",dist=" + filePath, err);
+                log.error("保存文件到 markdown 失败", err);
             }
         });
     });
 
+    //展示迭代文档
     ipcMain.on(ChannelsMarkdownStr, (event, action, versionIteration, version_iteration_requests, prjs) => {
         
         if (action !== ChannelsMarkdownShowStr) return;
-
         let iterationUUID = versionIteration[version_iterator_uuid];
+        let markdownContent = getMarkDownContent(versionIteration, version_iteration_requests, prjs);
 
-        let cacheIterationHash = getSalt(iterationUUID);
-
-        let serialNumStr = JSON.stringify(version_iteration_requests);
-        let crypto = require('crypto');
-        let serialHash = crypto.createHash('sha256').update(serialNumStr).digest('hex');
-
-        let markdownContent = "";
-
-        let markdownStoreFile = getServerMarkdownFilePath(iterationUUID);
-
-        if ( cacheIterationHash !== "" && cacheIterationHash === serialHash && fs.existsSync(markdownStoreFile)) {
-            //拿 markdown 文件内容
-            markdownContent = fs.readFileSync(markdownStoreFile).toString();
-        } else {
-            let formattedRequests = {};
-            for(let version_iteration_request of version_iteration_requests ) {
-                let _prj = version_iteration_request[iteration_request_prj];
-            
-                if (!(_prj in formattedRequests)) {
-                    formattedRequests[_prj] = {};
-                }
-            
-                let _fold = version_iteration_request[iteration_request_fold];
-            
-                if (!(_fold in formattedRequests[_prj])) {
-                    formattedRequests[_prj][_fold] = [];
-                }
-            
-                formattedRequests[_prj][_fold].push(version_iteration_request);
-            }
-        
-            //迭代标题
-            markdownContent += "# " + versionIteration[version_iterator_title] + "\n\n";
-            
-            //迭代内容
-            markdownContent += versionIteration[version_iterator_content] + "\n\n";
-            
-            Object.keys(formattedRequests).map(_prj => {
-            
-                let _prjName = prjs.find(row => row[prj_label] === _prj)[prj_remark];
-            
-                //项目
-                markdownContent += "## " + _prjName + "\n\n";
-            
-                Object.keys(formattedRequests[_prj]).map(_fold => {
-                    //文件夹
-                    markdownContent += "### " + " /" + _fold + "\n\n";
-            
-                    formattedRequests[_prj][_fold].map(_request => {
-            
-                        //接口名称
-                        markdownContent += "#### " + _request[iteration_request_title] + "\n\n";
-            
-                        //接口 uri
-                        markdownContent +=  "uri：" + _request[iteration_request_method] + " " + _request[iteration_request_uri] + "\n\n";
-            
-                        let header = _request[iteration_request_header];
-                        if (Object.keys(header).length > 0) {
-                            markdownContent += "**Header：**\n";
-                            markdownContent += "| 参数名       | 参数类型 | 备注 | 示例 |\n";
-                            markdownContent += "| ------------ | -------- | ---- | ----------------------- |\n";
-                            Object.keys(header).map(_headerKey => {
-                                let _headerObj = header[_headerKey];
-                                markdownContent += "| " + _headerKey + " | " + _headerObj[TABLE_FIELD_TYPE] + " | " + _headerObj[TABLE_FIELD_REMARK] + " | " + (_headerObj[TABLE_FIELD_VALUE].length > 20 ? _headerObj[TABLE_FIELD_VALUE].substring(0, 20) : _headerObj[TABLE_FIELD_VALUE]) + " |\n";
-                            });
-                            markdownContent += "\n";
-                        }
-            
-                        let body = _request[iteration_request_body];
-                        if (Object.keys(body).length > 0) {
-                            markdownContent += "**Body：**\n";
-                            markdownContent += "| 参数名       | 参数类型 | 备注 | 示例 |\n";
-                            markdownContent += "| ------------ | -------- | ---- | ----------------------- |\n";
-                            Object.keys(body).map(_bodyKey => {
-                                let _bodyObj = body[_bodyKey];
-                                markdownContent += "| " + _bodyKey + " | " + _bodyObj[TABLE_FIELD_TYPE] + " | " + _bodyObj[TABLE_FIELD_REMARK] + " | " + _bodyObj[TABLE_FIELD_VALUE] + " |\n";
-                            });
-                            markdownContent += "\n";
-                        }
-            
-                        let param = _request[iteration_request_param];
-                        if (Object.keys(param).length > 0) {
-                            markdownContent += "**param：**\n";
-                            markdownContent += "| 参数名       | 参数类型 | 备注 | 示例 |\n";
-                            markdownContent += "| ------------ | -------- | ---- | ----------------------- |\n";
-                            Object.keys(param).map(_paramKey => {
-                                let _paramObj = param[_paramKey];
-                                markdownContent += "| " + _paramKey + " | " + _paramObj[TABLE_FIELD_TYPE] + " | " + _paramObj[TABLE_FIELD_REMARK] + " | " + (_paramObj[TABLE_FIELD_VALUE].length > 20 ? _paramObj[TABLE_FIELD_VALUE].substring(0, 20) : _paramObj[TABLE_FIELD_VALUE]) + " |\n";
-                            });
-                            markdownContent += "\n";
-                        }
-            
-                        let responseList = [];
-                        iteratorObjectToArr(responseList, "", _request[iteration_response]);
-            
-                        markdownContent += "**响应：**\n";
-                        markdownContent += "| 参数名       | 参数类型 | 备注 | 示例 |\n";
-                        markdownContent += "| ------------ | -------- | ---- | ----------------------- |\n";
-                        responseList.map(_responseItem => {
-                            markdownContent += "| " + _responseItem[TABLE_FIELD_NAME] + " | " + _responseItem[TABLE_FIELD_TYPE] + " | " + _responseItem[TABLE_FIELD_REMARK] + " | " + (_responseItem[TABLE_FIELD_VALUE].length > 20 ? _responseItem[TABLE_FIELD_VALUE].substring(0, 20) : _responseItem[TABLE_FIELD_VALUE]) + " |\n";
-                        })
-                        markdownContent += "\n";
-            
-                        markdownContent += "响应示例：\n";
-            
-                        markdownContent += "```json\n";
-                        markdownContent += prettyJson(JSON.parse(_request[iteration_response_demo])) + "\n";
-                        markdownContent += "```\n";
-                    });
-                });
-            });
-            fs.outputFileSync(markdownStoreFile, markdownContent);
-            setIteratorCache(iterationUUID, serialHash);
-        }
-
-        event.reply(ChannelsMarkdownStr, action, iterationUUID, markdownContent);
+        event.reply(ChannelsMarkdownStr, action, iterationUUID, versionIteration[version_iterator_title], markdownContent);
     });
 
+}
+
+function getMarkDownContent(versionIteration, version_iteration_requests, prjs) : string {
+
+    let markdownContent = "";
+
+    let formattedRequests : any = {};
+    for(let version_iteration_request of version_iteration_requests ) {
+        let _prj = version_iteration_request[iteration_request_prj];
+    
+        if (!(_prj in formattedRequests)) {
+            formattedRequests[_prj] = {};
+        }
+    
+        let _fold = version_iteration_request[iteration_request_fold];
+    
+        if (!(_fold in formattedRequests[_prj])) {
+            formattedRequests[_prj][_fold] = [];
+        }
+    
+        formattedRequests[_prj][_fold].push(version_iteration_request);
+    }
+
+    //迭代标题
+    markdownContent += "# " + versionIteration[version_iterator_title] + "\n\n";
+    
+    //迭代内容
+    markdownContent += versionIteration[version_iterator_content] + "\n\n";
+    
+    Object.keys(formattedRequests).map(_prj => {
+    
+        let _prjName = prjs.find(row => row[prj_label] === _prj)[prj_remark];
+    
+        //项目
+        markdownContent += "## " + _prjName + "\n\n";
+    
+        Object.keys(formattedRequests[_prj]).map(_fold => {
+            //文件夹
+            markdownContent += "### " + " /" + _fold + "\n\n";
+    
+            formattedRequests[_prj][_fold].map(_request => {
+    
+                //接口名称
+                markdownContent += "#### " + _request[iteration_request_title] + "\n\n";
+    
+                //接口 uri
+                markdownContent +=  "uri：" + _request[iteration_request_method] + " " + _request[iteration_request_uri] + "\n\n";
+
+                let param = _request[iteration_request_param];
+                if (Object.keys(param).length > 0) {
+                    markdownContent += "**param：**\n";
+                    markdownContent += "| 参数名       | 参数类型 | 备注 | 示例 |\n";
+                    markdownContent += "| ------------ | -------- | ---- | ----------------------- |\n";
+                    Object.keys(param).map(_paramKey => {
+                        let _paramObj = param[_paramKey];
+                        markdownContent += "| " + _paramKey + " | " + _paramObj[TABLE_FIELD_TYPE] + " | " + _paramObj[TABLE_FIELD_REMARK] + " | " + _paramObj[TABLE_FIELD_VALUE] + " |\n";
+                    });
+                    markdownContent += "\n";
+                }
+
+                let header = _request[iteration_request_header];
+                if (Object.keys(header).length > 0) {
+                    markdownContent += "**Header：**\n";
+                    markdownContent += "| 参数名       | 参数类型 | 备注 | 示例 |\n";
+                    markdownContent += "| ------------ | -------- | ---- | ----------------------- |\n";
+                    Object.keys(header).map(_headerKey => {
+                        let _headerObj = header[_headerKey];
+                        markdownContent += "| " + _headerKey + " | " + _headerObj[TABLE_FIELD_TYPE] + " | " + _headerObj[TABLE_FIELD_REMARK] + " | " + _headerObj[TABLE_FIELD_VALUE] + " |\n";
+                    });
+                    markdownContent += "\n";
+                }
+
+                let bodyList = [];
+                iteratorObjectToArr(bodyList, "", _request[iteration_request_body]);
+    
+                markdownContent += "**Body：**\n";
+                markdownContent += "| 参数名       | 参数类型 | 备注 | 示例 |\n";
+                markdownContent += "| ------------ | -------- | ---- | ----------------------- |\n";
+                bodyList.map(_bodyItem => {
+                    markdownContent += "| " + _bodyItem[TABLE_FIELD_NAME] + " | " + _bodyItem[TABLE_FIELD_TYPE] + " | " + _bodyItem[TABLE_FIELD_REMARK] + " | " + _bodyItem[TABLE_FIELD_VALUE] + " |\n";
+                })
+                markdownContent += "\n";
+    
+                let responseList = [];
+                iteratorObjectToArr(responseList, "", _request[iteration_response]);
+    
+                markdownContent += "**响应：**\n";
+                markdownContent += "| 参数名       | 参数类型 | 备注 | 示例 |\n";
+                markdownContent += "| ------------ | -------- | ---- | ----------------------- |\n";
+                responseList.map(_responseItem => {
+                    markdownContent += "| " + _responseItem[TABLE_FIELD_NAME] + " | " + _responseItem[TABLE_FIELD_TYPE] + " | " + _responseItem[TABLE_FIELD_REMARK] + " | " + _responseItem[TABLE_FIELD_VALUE] + " |\n";
+                })
+                markdownContent += "\n";
+    
+                markdownContent += "响应示例：\n";
+    
+                markdownContent += "```json\n";
+                markdownContent += prettyJson(JSON.parse(_request[iteration_response_demo])) + "\n";
+                markdownContent += "```\n";
+            });
+        });
+    });
+
+    return markdownContent;
 }

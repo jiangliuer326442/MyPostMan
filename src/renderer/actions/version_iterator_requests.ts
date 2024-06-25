@@ -57,7 +57,7 @@ export async function delVersionIteratorRequest(record, cb) {
     }
 }
 
-export async function getVersionIteratorRequestsByProject(iteration_uuid : string, project : string, fold : string, title : string, uri : string) {
+export async function getVersionIteratorRequestsByProject(iteration_uuid : string, project : string, fold : string | null, title : string, uri : string) {
     await window.db.open();
 
     let version_iteration_requests = await window.db[TABLE_VERSION_ITERATION_REQUEST_NAME]
@@ -103,20 +103,48 @@ export async function getVersionIteratorRequestsByProject(iteration_uuid : strin
 }
 
 export async function editVersionIteratorRequest(
+    initMethod : string, initUri : string,
     iteration_uuid : string, project : string, method : string, uri : string, 
     title: string, fold: string, header: object, body: object, param: object, response: object
 ) {
-    let version_iteration_request = await getVersionIteratorRequest(iteration_uuid, project, method, uri);
-    version_iteration_request[iteration_request_title] = title;
-    version_iteration_request[iteration_request_fold] = fold;
-    version_iteration_request[iteration_request_header] = header;
-    version_iteration_request[iteration_request_body] = body;
-    version_iteration_request[iteration_request_param] = param;
-    version_iteration_request[iteration_request_response] = response;
+    window.db.transaction('rw',
+        window.db[TABLE_VERSION_ITERATION_REQUEST_NAME],
+        async () => {
+            //未改动基础，只修改
+            if (initMethod === method && initUri === uri) {
+                let version_iteration_request = await getVersionIteratorRequest(iteration_uuid, project, method, uri);
+                version_iteration_request[iteration_request_title] = title;
+                version_iteration_request[iteration_request_fold] = fold;
+                version_iteration_request[iteration_request_header] = header;
+                version_iteration_request[iteration_request_body] = body;
+                version_iteration_request[iteration_request_param] = param;
+                version_iteration_request[iteration_request_response] = response;
+            
+                console.debug("addVersionIteratorRequest", version_iteration_request);
+            
+                await window.db[TABLE_VERSION_ITERATION_REQUEST_NAME].put(version_iteration_request);
+            } else {
+                let version_iteration_request = await getVersionIteratorRequest(iteration_uuid, project, initMethod, initUri);
+                version_iteration_request[iteration_request_delFlg] = 1;
+                console.debug("delVersionIteratorRequest", version_iteration_request);
+                await window.db[TABLE_VERSION_ITERATION_REQUEST_NAME].put(version_iteration_request);
+                
+                version_iteration_request[iteration_request_method] = method;
+                version_iteration_request[iteration_request_uri] = uri;
+                version_iteration_request[iteration_request_title] = title;
+                version_iteration_request[iteration_request_fold] = fold;
+                version_iteration_request[iteration_request_header] = header;
+                version_iteration_request[iteration_request_body] = body;
+                version_iteration_request[iteration_request_param] = param;
+                version_iteration_request[iteration_request_response] = response;
+                version_iteration_request[iteration_request_delFlg] = 0;
+            
+                console.debug("addVersionIteratorRequest", version_iteration_request);
+                await window.db[TABLE_VERSION_ITERATION_REQUEST_NAME].put(version_iteration_request);
+            }
 
-    console.debug("addVersionIteratorRequest", version_iteration_request);
-
-    await window.db[TABLE_VERSION_ITERATION_REQUEST_NAME].put(version_iteration_request);
+        }
+    );
 }
 
 export async function addVersionIteratorRequest(

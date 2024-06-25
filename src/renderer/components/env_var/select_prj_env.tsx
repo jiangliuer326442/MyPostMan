@@ -7,6 +7,7 @@ import {
     ENV_LIST_ROUTE,
 } from "../../../config/routers";
 import { getEnvs } from '../../actions/env';
+import { isStringEmpty } from '../../util';
 
 class PrjEnvSelect extends Component {
 
@@ -22,17 +23,23 @@ class PrjEnvSelect extends Component {
         if(this.props.envs.length === 0) {
           getEnvs(this.props.dispatch);
         }
-        this.props.cb(this.state.prj, this.state.env);
+        if (!isStringEmpty(this.state.prj)) {
+            this.props.cb(this.state.prj, this.state.env);
+        }
     }
 
     setProjectChange = (value: string) => {
         this.setState({prj: value});
-        this.props.cb(value, this.state.env !== "" ? this.state.env : this.state.env);
+        if (!isStringEmpty(value)) {
+            this.props.cb(value, this.state.env !== "" ? this.state.env : this.state.env);
+        }
     }
   
     setEnvironmentChange = (value: string) => {
         this.setState({env: value});
-        this.props.cb(this.state.prj !== "" ? this.state.prj : this.state.prj, value);
+        if (!isStringEmpty(this.state.prj)) {
+            this.props.cb(this.state.prj, value);
+        }
     }
 
     render() : ReactNode {

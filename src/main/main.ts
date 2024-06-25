@@ -65,6 +65,7 @@ const startServer = (cb) => {
           target: 'http://localhost:' + DevHtmlPort + '/proxy/',
         });
         app.use('/proxy', apiProxy); 
+        app.use('/ws', apiProxy); 
       } else {
         staticPath = path.resolve(__dirname, '../renderer/');
         app.use(express.static(staticPath));  
@@ -77,15 +78,7 @@ const startServer = (cb) => {
       });
       app.post('/sprint/docs', (req, res) => {
         let iteratorId = req.body.iteratorId;
-        let content = getMarkdownContentByIteratorId(iteratorId);
-        const data = {
-          code: 1000,
-          message: '',
-          data: {
-            markdown: content
-          }
-        };
-        res.json(data);
+        getMarkdownContentByIteratorId(iteratorId, res);
       });
       app.listen(port, () => {  
           cb();

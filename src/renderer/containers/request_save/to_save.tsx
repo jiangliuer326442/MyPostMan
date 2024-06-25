@@ -16,12 +16,15 @@ import {
     iteratorGenHash,
     shortJsonContent,
     parseJsonToTable,
+    parseJsonToFilledTable,
 } from '../../util/json';
+
 import { createWindow } from '../../util/window';
 import { ENV_VALUE_API_HOST } from "../../../config/envKeys";
 import { 
     TABLE_ENV_VAR_FIELDS,
     TABLE_VERSION_ITERATION_FIELDS,
+    TABLE_VERSION_ITERATION_REQUEST_FIELDS,
     TABLE_REQUEST_HISTORY_FIELDS,
     TABLE_MICRO_SERVICE_FIELDS,
     TABLE_ENV_FIELDS,
@@ -36,6 +39,7 @@ import { getEnvs } from '../../actions/env';
 import { getPrjs } from '../../actions/project';
 import { getEnvValues } from '../../actions/env_value';
 import { getOpenVersionIteratorsByPrj } from '../../actions/version_iterator';
+import { getVersionIteratorRequest } from '../../actions/version_iterator_requests';
 import { getRequestHistory } from '../../actions/request_history';
 import { addJsonFragement } from '../../actions/request_save';
 import { 
@@ -58,6 +62,13 @@ let request_history_param = TABLE_REQUEST_HISTORY_FIELDS.FIELD_REQUEST_PARAM;
 let request_history_response = TABLE_REQUEST_HISTORY_FIELDS.FIELD_RESPONSE_CONTENT;
 let request_history_jsonFlg = TABLE_REQUEST_HISTORY_FIELDS.FIELD_JSONFLG;
 let request_history_htmlFlg = TABLE_REQUEST_HISTORY_FIELDS.FIELD_HTMLFLG;
+
+let version_iterator_request_title = TABLE_VERSION_ITERATION_REQUEST_FIELDS.FIELD_TITLE;
+let version_iterator_request_fold = TABLE_VERSION_ITERATION_REQUEST_FIELDS.FIELD_FOLD;
+let version_iterator_request_header = TABLE_VERSION_ITERATION_REQUEST_FIELDS.FIELD_REQUEST_HEADER;
+let version_iterator_request_body = TABLE_VERSION_ITERATION_REQUEST_FIELDS.FIELD_REQUEST_BODY;
+let version_iterator_request_param = TABLE_VERSION_ITERATION_REQUEST_FIELDS.FIELD_REQUEST_PARAM;
+let version_iterator_request_response = TABLE_VERSION_ITERATION_REQUEST_FIELDS.FIELD_RESPONSE_CONTENT;
 
 let version_iterator_uuid = TABLE_VERSION_ITERATION_FIELDS.FIELD_UUID;
 let version_iterator_name = TABLE_VERSION_ITERATION_FIELDS.FIELD_NAME;
@@ -95,7 +106,7 @@ class RequestSaveContainer extends Component {
             isResponseHtml: false,
             stopFlg : true,
             showFlg : false,
-            versionIterator: "",
+            versionIterator: props.match.params.versionIteratorId,
             selectedFolder: "",
             folderName: "",
             versionIteratorsSelector: [],
@@ -111,66 +122,129 @@ class RequestSaveContainer extends Component {
             getPrjs(this.props.dispatch);
         }
 
-        let locationArr = window.location.href.split("/");
-        let locationArrNum = locationArr.length;
-        let param = locationArr[locationArrNum - 1];
-        let key = Number(param);
-        getRequestHistory(key, record => {
-
+        let historyId = Number(this.props.match.params.historyId);
+        getRequestHistory(historyId, record => {
             let prj = record[request_history_micro_service];
+            let method = record[request_history_method];
+            let uri = record[request_history_uri];
+            let env = record[request_history_env];
 
-            getVersionIteratorFolders(this.state.versionIterator, prj, folders => this.setState({folders}));
+            this.initByIteratorPrjEnv(this.state.versionIterator, prj, env);
 
-            this.getEnvValueData(record[request_history_micro_service], record[request_history_env]);
-            this.refreshVersionIteratorData(record[request_history_micro_service]);
-
-            if (record[request_history_jsonFlg]) {
-                let requestHeadData = record[request_history_head];
-                let shortRequestHeadJsonObject = {};
-                shortJsonContent(shortRequestHeadJsonObject, requestHeadData);
-                let requestHeaderHash = iteratorGenHash(shortRequestHeadJsonObject);
-                let formRequestHeadData = {};
-                parseJsonToTable(formRequestHeadData, shortRequestHeadJsonObject);
-                let requestBodyData = record[request_history_body];
-                let shortRequestBodyJsonObject = {};
-                shortJsonContent(shortRequestBodyJsonObject, requestBodyData);
-                let requestBodyHash = iteratorGenHash(shortRequestBodyJsonObject);
-                let formRequestBodyData = {};
-                parseJsonToTable(formRequestBodyData, shortRequestBodyJsonObject);
-                let requestParamData = record[request_history_param];
-                let shortRequestParamJsonObject = {};
-                shortJsonContent(shortRequestParamJsonObject, requestParamData);
-                let requestParamHash = iteratorGenHash(shortRequestParamJsonObject);
-                let formRequestParamData = {};
-                parseJsonToTable(formRequestParamData, shortRequestParamJsonObject);
-
-                let responseData = JSON.parse(record[request_history_response]);
-                let shortResponseJsonObject = {};
-                shortJsonContent(shortResponseJsonObject, responseData);
-                let responseHash = iteratorGenHash(shortResponseJsonObject);
-                let formResponseData = {};
-                parseJsonToTable(formResponseData, shortResponseJsonObject);
-                this.setState({
-                    showFlg: true,
-                    prj,
-                    env: record[request_history_env],
-                    requestUri: record[request_history_uri],
-                    requestMethod: record[request_history_method],
-                    isResonseJson: record[request_history_jsonFlg],
-                    isResponseHtml: record[request_history_htmlFlg],
-                    formRequestHeadData,
-                    requestHeaderHash,
-                    formRequestBodyData,
-                    requestBodyHash,
-                    formRequestParamData,
-                    requestParamHash,
-                    formResponseData,
-                    responseHash,
-                    responseDemo: JSON.stringify(shortResponseJsonObject),
+            if (!isStringEmpty(this.state.versionIterator)) {
+                getVersionIteratorRequest(this.state.versionIterator, prj, method, uri).then(versionIterationRequest => {
+                    if (!isStringEmpty(versionIterationRequest)) {
+                        if (record[request_history_jsonFlg]) {
+                            let requestHeadData = record[request_history_head];
+                            let shortRequestHeadJsonObject = {};
+                            shortJsonContent(shortRequestHeadJsonObject, requestHeadData);
+                            let requestHeaderHash = iteratorGenHash(shortRequestHeadJsonObject);
+                            let formRequestHeadData = {};
+                            parseJsonToFilledTable(formRequestHeadData, shortRequestHeadJsonObject, versionIterationRequest[version_iterator_request_header]);
+                            let requestBodyData = record[request_history_body];
+                            let shortRequestBodyJsonObject = {};
+                            shortJsonContent(shortRequestBodyJsonObject, requestBodyData);
+                            let requestBodyHash = iteratorGenHash(shortRequestBodyJsonObject);
+                            let formRequestBodyData = {};
+                            parseJsonToFilledTable(formRequestBodyData, shortRequestBodyJsonObject, versionIterationRequest[version_iterator_request_body]);
+                            let requestParamData = record[request_history_param];
+                            let shortRequestParamJsonObject = {};
+                            shortJsonContent(shortRequestParamJsonObject, requestParamData);
+                            let requestParamHash = iteratorGenHash(shortRequestParamJsonObject);
+                            let formRequestParamData = {};
+                            parseJsonToFilledTable(formRequestParamData, shortRequestParamJsonObject, versionIterationRequest[version_iterator_request_param]);
+                            let responseData = JSON.parse(record[request_history_response]);
+                            let shortResponseJsonObject = {};
+                            shortJsonContent(shortResponseJsonObject, responseData);
+                            let responseHash = iteratorGenHash(shortResponseJsonObject);
+                            let formResponseData = {};
+                            parseJsonToFilledTable(formResponseData, shortResponseJsonObject, versionIterationRequest[version_iterator_request_response]);
+                            this.setState({
+                                showFlg: true,
+                                prj,
+                                env: record[request_history_env],
+                                title: versionIterationRequest[version_iterator_request_title],
+                                selectedFolder: versionIterationRequest[version_iterator_request_fold],
+                                requestUri: uri,
+                                requestMethod: method,
+                                isResonseJson: record[request_history_jsonFlg],
+                                isResponseHtml: record[request_history_htmlFlg],
+                                formRequestHeadData,
+                                requestHeaderHash,
+                                formRequestBodyData,
+                                requestBodyHash,
+                                formRequestParamData,
+                                requestParamHash,
+                                formResponseData,
+                                responseHash,
+                                responseDemo: JSON.stringify(shortResponseJsonObject),
+                            });
+                        }
+                    } else {
+                        this.initByRequestHistoryRecord(record, prj, method, uri);
+                    }
                 });
-
+            } else {
+                this.initByRequestHistoryRecord(record, prj, method, uri);
             }
         });
+    }
+
+    initByIteratorPrjEnv = (versionIterator: string, prj: string, env: string) => {
+        if (!isStringEmpty(versionIterator)) {
+            getVersionIteratorFolders(versionIterator, prj, folders => this.setState({folders}));
+        }
+
+        this.getEnvValueData(prj, env);
+        this.refreshVersionIteratorData(prj);
+    }
+
+    initByRequestHistoryRecord = (historyRecord: any, prj : string, method : string, uri : string) => {
+        if (historyRecord[request_history_jsonFlg]) {
+            let requestHeadData = historyRecord[request_history_head];
+            let shortRequestHeadJsonObject = {};
+            shortJsonContent(shortRequestHeadJsonObject, requestHeadData);
+            let requestHeaderHash = iteratorGenHash(shortRequestHeadJsonObject);
+            let formRequestHeadData = {};
+            parseJsonToTable(formRequestHeadData, shortRequestHeadJsonObject);
+            let requestBodyData = historyRecord[request_history_body];
+            let shortRequestBodyJsonObject = {};
+            shortJsonContent(shortRequestBodyJsonObject, requestBodyData);
+            let requestBodyHash = iteratorGenHash(shortRequestBodyJsonObject);
+            let formRequestBodyData = {};
+            parseJsonToTable(formRequestBodyData, shortRequestBodyJsonObject);
+            let requestParamData = historyRecord[request_history_param];
+            let shortRequestParamJsonObject = {};
+            shortJsonContent(shortRequestParamJsonObject, requestParamData);
+            let requestParamHash = iteratorGenHash(shortRequestParamJsonObject);
+            let formRequestParamData = {};
+            parseJsonToTable(formRequestParamData, shortRequestParamJsonObject);
+
+            let responseData = JSON.parse(historyRecord[request_history_response]);
+            let shortResponseJsonObject = {};
+            shortJsonContent(shortResponseJsonObject, responseData);
+            let responseHash = iteratorGenHash(shortResponseJsonObject);
+            let formResponseData = {};
+            parseJsonToTable(formResponseData, shortResponseJsonObject);
+            this.setState({
+                showFlg: true,
+                prj,
+                env: historyRecord[request_history_env],
+                requestUri: uri,
+                requestMethod: method,
+                isResonseJson: historyRecord[request_history_jsonFlg],
+                isResponseHtml: historyRecord[request_history_htmlFlg],
+                formRequestHeadData,
+                requestHeaderHash,
+                formRequestBodyData,
+                requestBodyHash,
+                formRequestParamData,
+                requestParamHash,
+                formResponseData,
+                responseHash,
+                responseDemo: JSON.stringify(shortResponseJsonObject),
+            });
+        }
     }
 
     handleCreateIterator = () => {
@@ -226,8 +300,7 @@ class RequestSaveContainer extends Component {
                 this.props.device
             );
             message.success("保存成功");
-            let urlStr = encode(this.state.versionIterator + "$$" + this.state.prj + "$$" + this.state.requestMethod + "$$" + this.state.requestUri);
-            window.location.href = "#/version_iterator_request/" + urlStr;
+            this.props.history.push("#/version_iterator_request/" + this.state.versionIterator + "/" + this.state.prj + "/" + this.state.requestMethod + "/" + encode(this.state.requestUri));
         }
     }
 
@@ -366,6 +439,7 @@ class RequestSaveContainer extends Component {
 
                                 <Form.Item label="选择需求迭代">
                                     <Select
+                                        disabled={!isStringEmpty(this.props.match.params.versionIteratorId)}
                                         showSearch
                                         allowClear
                                         placeholder="选择需求迭代版本"

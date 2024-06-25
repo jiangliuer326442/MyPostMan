@@ -1,10 +1,12 @@
-import { UUID, UNAME, REG_TIME, APPNAME, APPVERSION } from '../../../config/global_config';
+import { UUID, UNAME, REG_TIME, APPNAME, HTML, IP, APPVERSION } from '../../../config/global_config';
 import { SET_DEVICE_INFO } from '../../../config/redux';
 import { isStringEmpty } from '../../util';
 
 export default function (state = {
   uuid: "",
   uname: "",
+  html: "",
+  ip: "",
   appName: "",
   appVersion: "",
   rtime: 0
@@ -36,6 +38,16 @@ export default function (state = {
         sessionStorage.setItem(APPVERSION, action.appVersion);
         newState.appVersion = action.appVersion;
       }
+
+      if (action.html !== undefined) {
+        sessionStorage.setItem(HTML, action.html);
+        newState.html = action.html;
+      }
+
+      if (action.ip !== undefined) {
+        sessionStorage.setItem(IP, action.ip);
+        newState.ip = action.ip;
+      }
       
       return Object.assign({}, state, newState);
   }else if(state.uuid === "") {
@@ -44,6 +56,8 @@ export default function (state = {
     state.rtime = isStringEmpty(sessionStorage.getItem(REG_TIME)) ? 0 : Number(sessionStorage.getItem(REG_TIME));
     state.appName = isStringEmpty(sessionStorage.getItem(APPNAME)) ? "" : sessionStorage.getItem(APPNAME) as string;
     state.appVersion = isStringEmpty(sessionStorage.getItem(APPVERSION)) ? "" : sessionStorage.getItem(APPVERSION) as string;
+    state.html = isStringEmpty(sessionStorage.getItem(HTML)) ? "" : sessionStorage.getItem(HTML) as string;
+    state.ip = isStringEmpty(sessionStorage.getItem(IP)) ? "" : sessionStorage.getItem(IP) as string;
   }
   return state;
 }

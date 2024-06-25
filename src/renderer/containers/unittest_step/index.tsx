@@ -30,6 +30,8 @@ import {
     getUnitTestStepAsserts,
 } from '../../actions/unittest';
 import RequestParamFormTable from "../../components/unittest_step/request_param_form_table";
+import RequestHeadFormTable from "../../components/unittest_step/request_head_form_table";
+import RequestBodyFormTable from "../../components/unittest_step/request_body_form_table";
 import StepExpressionBuilderBox from "../../components/unittest_step/step_expression_builder_box";
 import { isStringEmpty } from '../../util';
 
@@ -335,7 +337,7 @@ class UnittestStepContainer extends Component {
             {
               key: 'headers',
               label: '头部',
-              children: <RequestParamFormTable 
+              children: <RequestHeadFormTable 
                     object={this.state.formRequestHeadData} 
                     tips={this.state.paramTips} 
                     cb={obj=>this.setState({requestHead: obj})} 
@@ -353,7 +355,7 @@ class UnittestStepContainer extends Component {
             {
               key: 'body',
               label: '主体',
-              children: <RequestParamFormTable 
+              children: <RequestBodyFormTable 
                     object={this.state.formRequestBodyData} 
                     tips={this.state.paramTips} 
                     cb={obj=>this.setState({requestBody: obj})} 

@@ -3,6 +3,7 @@ import { cloneDeep } from 'lodash';
 
 import { getType, isStringEmpty } from './';
 import { TABLE_JSON_FRAGEMENT_FIELDS } from '../../config/db';
+import { CONTENT_TYPE } from '../../config/global_config';
 
 import { getJsonFragment } from '../actions/request_save';
 
@@ -43,10 +44,14 @@ export function shortJsonContent(shortJsonObject : any, jsonObject : any){
         } else if (type === "Null") {
 
         } else {
-            if (jsonObject[_key].length > 20) {
-                shortJsonObject[_key] = jsonObject[_key].substring(0, 20) + "...";
-            } else {
+            if (getType(jsonObject[_key]) === "Number") {
+                jsonObject[_key] = jsonObject[_key].toString();
+            }
+            //不对 content-type 的字符串进行缩减
+            if (_key === CONTENT_TYPE || jsonObject[_key].length <= 20) {
                 shortJsonObject[_key] = jsonObject[_key];
+            } else {
+                shortJsonObject[_key] = jsonObject[_key].substring(0, 20) + "...";
             }
         }
     }
@@ -85,6 +90,30 @@ export function cleanJson(inJsonObject : any) {
     let outJsonObject : any = {};
     innerCleanJson(outJsonObject, copyInJsonObject);
     return outJsonObject;
+}
+
+export function parseJsonToFilledTable(parseResult : any, jsonObject : any, filledObject : any) {
+    for(let _key in jsonObject) {
+        let type = getType(jsonObject[_key]);
+        if (type === "Object") {
+            parseResult[_key] = {};
+            parseResult[_key][TABLE_FIELD_REMARK] = "";
+            parseResult[_key][TABLE_FIELD_TYPE] = type;
+            parseJsonToFilledTable(parseResult[_key], jsonObject[_key], filledObject[_key]);
+        } else if (type === "Array" && jsonObject[_key].length > 0) {
+            parseResult[_key] = {};
+            parseResult[_key][TABLE_FIELD_REMARK] = "";
+            parseResult[_key][TABLE_FIELD_TYPE] = type;
+            if (getType(jsonObject[_key][0]) === "Object") {
+                parseJsonToFilledTable(parseResult[_key], jsonObject[_key][0], filledObject[_key]);
+            }
+        } else {
+            parseResult[_key] = {};
+            parseResult[_key][TABLE_FIELD_REMARK] = (filledObject.hasOwnProperty(_key) && filledObject[_key].hasOwnProperty(TABLE_FIELD_REMARK)) ? filledObject[_key][TABLE_FIELD_REMARK] : "";
+            parseResult[_key][TABLE_FIELD_TYPE] = type;
+            parseResult[_key][TABLE_FIELD_VALUE] = jsonObject[_key];
+        }
+    }
 }
 
 export async function parseJsonToChildren(parentKeys, parentKey, result, content, cb) {
@@ -184,26 +213,47 @@ function innerIteratorGenHash(hash, object) {
 function innerCleanJson(outJsonObject : any, inJsonObject : any) {
 	for (let _key in inJsonObject) {
 		let _currentObject = inJsonObject[_key];
+        let _currentObjectType = _currentObject[TABLE_FIELD_TYPE];
 		let delFlg = true;
-		let value = "";
-		for (let _key2 in _currentObject) {
-			if (_key2 === TABLE_FIELD_VALUE) {
-				value = _currentObject[_key2];
-			} 
-            
-            if (!isInnerKey(_key2)) {
-				delFlg = false;
-			}
-		}
-		if (delFlg) {
-			_currentObject = value;
-		} else {
-			delete _currentObject[TABLE_FIELD_REMARK];
-			delete _currentObject[TABLE_FIELD_TYPE];
-		}
-		outJsonObject[_key] = _currentObject;
-		if (!delFlg) {
-			innerCleanJson(outJsonObject[_key], inJsonObject[_key]);
-		}
+        if (_currentObjectType === "Array") {
+            let value = "";
+            for (let _key2 in _currentObject) {                
+                if (!isInnerKey(_key2)) {
+                    delFlg = false;
+                }
+            }
+            if (delFlg) {
+                _currentObject = [value];
+            } else {
+                delete _currentObject[TABLE_FIELD_REMARK];
+                delete _currentObject[TABLE_FIELD_TYPE];
+                _currentObject = [_currentObject];
+            }
+            outJsonObject[_key] = _currentObject;
+            if (!delFlg) {
+                innerCleanJson(outJsonObject[_key][0], _currentObject[0]);
+            }
+        } else {
+            let value = "";
+            for (let _key2 in _currentObject) {
+                if (_key2 === TABLE_FIELD_VALUE) {
+                    value = _currentObject[_key2];
+                } 
+                
+                if (!isInnerKey(_key2)) {
+                    delFlg = false;
+                }
+            }
+            if (delFlg) {
+                _currentObject = value;
+            } else {
+                delete _currentObject[TABLE_FIELD_REMARK];
+                delete _currentObject[TABLE_FIELD_TYPE];
+            }
+            outJsonObject[_key] = _currentObject;
+            if (!delFlg) {
+                innerCleanJson(outJsonObject[_key], inJsonObject[_key]);
+            }
+        }
 	}
 }

@@ -2,9 +2,25 @@
 import { URL } from 'url';
 import path from 'path';
 import { app } from 'electron';
+import os from 'os';
 import log from 'electron-log';
 
 import { GLobalPort } from '../../config/global_config';
+
+export function getIpV4() {
+  const interfaces = os.networkInterfaces();
+
+  for (const name of Object.keys(interfaces)) {
+      for (const netInterface of interfaces[name]) {
+          const { address, family, internal } = netInterface;
+          if (family === 'IPv4' && !internal) {
+              return address;
+          }
+      }
+  }
+
+  return "";
+}
 
 export function resolveHtmlPath(htmlFileName: string) {
   let port = process.env.FORMAL_PORT || GLobalPort;
@@ -35,8 +51,6 @@ export async function genUUID() {
     systemSerial: staticData.system.serial, //系统串号
     baseboardSerial: staticData.baseboard.serial, //主板串号
     chassisSerial: staticData.chassis.serial, //基座串号
-    diskSerial: staticData.diskLayout[0].serialNum, //第一块磁盘的串号
-    memSerial: staticData.memLayout[0].serialNum, //第一个内存的串号
   }
   let arr = await si.networkInterfaces();
   let networkInterfaceDefault = await si.networkInterfaceDefault();

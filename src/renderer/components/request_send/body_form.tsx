@@ -8,15 +8,32 @@ import {
 
 import { isStringEmpty, removeWithoutGap } from "../../util";
 
+import { CONTENT_TYPE_JSON } from '../../../config/global_config';
+import { isJsonString, prettyJson } from '../../util/json';
+
+const { TextArea } = Input;
+
 class RequestSendBody extends Component {
 
     constructor(props) {
         super(props);
-        let list = props.obj;
-        this.state = {
-            rows: list.length,
-            data: list,
-        };
+
+        if (props.contentType === CONTENT_TYPE_JSON) {
+            let data = props.obj;
+            if (!isStringEmpty(data)) {
+                data = prettyJson(JSON.parse(data));
+            }
+            this.state = {
+                rows : 0,
+                data
+            }
+        } else {
+            let list = props.obj;
+            this.state = {
+                rows: list.length,
+                data: list,
+            };
+        }
     }
 
     setKey = (value, i) => {
@@ -88,48 +105,65 @@ class RequestSendBody extends Component {
     }
 
     render() : ReactNode {
-        return (
-            <Flex vertical gap="small">
+        return this.props.contentType === CONTENT_TYPE_JSON ? 
+            (<Flex vertical gap="small">
+                <Flex>在下方粘贴你的 json 报文</Flex>
+                <Flex>
+                    <TextArea
+                        value={this.state.data}
+                        onChange={(e) => {
+                            let content = e.target.value;
+                            this.setState({ data: content });
+                            if (isJsonString(content)) {
+                                this.props.cb(content);
+                            }
+                        }}
+                        autoSize={{ minRows: 10 }}
+                    />
+                </Flex>
+            </Flex>)
+        : 
+            (<Flex vertical gap="small">
                 <Flex>
                     <Flex><div style={{width: 20}}></div></Flex>
                     <Flex flex={1} style={{paddingLeft: 20}}>键</Flex>
                     <Flex flex={1} style={{paddingLeft: 20}}>值</Flex>
                 </Flex>
                 {Array.from({ length: this.state.rows+1 }, (_, i) => (
-                    <Flex key={i}>
-                        <Flex>
-                            <Button 
-                                type='link' danger 
-                                shape="circle" 
-                                disabled={i >= this.state.rows} 
-                                icon={<DeleteOutlined />} 
-                                onClick={() => this.handleDel(i)}
-                            />
-                        </Flex>
-                        <Flex flex={1}>
-                            <Input allowClear value={
-                                (i<this.state.rows ? this.state.data[i].key : "")
-                            } 
-                            onChange={event => this.setKey(event.target.value, i)} /></Flex>
-                        <Flex flex={1}>
-                            <AutoComplete
-                                allowClear
-                                style={{width: "100%"}}
-                                onSearch={text => this.setOptions(text, i)}
-                                placeholder="输入 {{ 可引用环境变量参数"
-                                onChange={data => this.setValue(data, i)}
-                                onSelect={data => this.setSelectedValue(data, i)}
-                                options={ this.state.data[i] && this.state.data[i]['options'] ? this.state.data[i]['options'] : [] }
-                                value={
-                                    (i<this.state.rows ? this.state.data[i].value : "")
-                                }
-                            >
-                            </AutoComplete>
-                        </Flex>
+                <Flex key={i}>
+                    <Flex>
+                        <Button 
+                            type='link' danger 
+                            shape="circle" 
+                            disabled={i >= this.state.rows} 
+                            icon={<DeleteOutlined />} 
+                            onClick={() => this.handleDel(i)}
+                        />
                     </Flex>
+                    <Flex flex={1}>
+                        <Input allowClear value={
+                            (i<this.state.rows ? this.state.data[i].key : "")
+                            } 
+                            onChange={event => this.setKey(event.target.value, i)} />
+                    </Flex>
+                    <Flex flex={1}>
+                        <AutoComplete
+                            allowClear
+                            style={{width: "100%"}}
+                            onSearch={text => this.setOptions(text, i)}
+                            placeholder="输入 {{ 可引用环境变量参数"
+                            onChange={data => this.setValue(data, i)}
+                            onSelect={data => this.setSelectedValue(data, i)}
+                            options={ this.state.data[i] && this.state.data[i]['options'] ? this.state.data[i]['options'] : [] }
+                            value={
+                                (i<this.state.rows ? this.state.data[i].value : "")
+                            }
+                        >
+                        </AutoComplete>
+                    </Flex>
+                </Flex>
                 ))}
-            </Flex>
-        )
+            </Flex>)
     }
 
 }

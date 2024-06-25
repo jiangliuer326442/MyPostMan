@@ -2,7 +2,7 @@ import { Component, ReactNode } from 'react';
 import { connect } from 'react-redux';
 import { Descriptions, Breadcrumb, Flex, Layout, Tabs, Form, message, Button, Input, Divider, Select } from "antd";
 import { cloneDeep } from 'lodash';
-import { decode } from 'base-64';
+import { decode, encode } from 'base-64';
 import JsonView from 'react-json-view';
 
 import {
@@ -74,11 +74,13 @@ class RequestSaveContainer extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            prj : "",
+            prj : props.match.params.prj,
             title : "",
             requestHost: "",
-            requestUri: "",
-            requestMethod: "",
+            initRequestUri: decode(props.match.params.uri),
+            initRequestMethod: props.match.params.method,
+            requestUri: decode(props.match.params.uri),
+            requestMethod: props.match.params.method,
             responseDemo: "",
             formResponseData: {},
             isResonseJson: false,
@@ -88,7 +90,7 @@ class RequestSaveContainer extends Component {
             isResponseHtml: false,
             stopFlg : true,
             showFlg : false,
-            versionIterator: "",
+            versionIterator: props.match.params.iteratorId,
             selectedFolder: "",
             folderName: "",
             cname: "",
@@ -101,17 +103,11 @@ class RequestSaveContainer extends Component {
         if(this.props.prjs.length === 0) {
             getPrjs(this.props.dispatch);
         }
-        let param = this.props.match.params.params;
-        let paramArr = decode(param).split("$$");
-        this.state.versionIterator = paramArr[0];
-        this.state.prj = paramArr[1];
-        this.state.requestMethod = paramArr[2];
-        this.state.requestUri = paramArr[3];
 
         getVersionIteratorFolders(this.state.versionIterator, this.state.prj, folders => this.setState({folders}));
 
         if (isStringEmpty(this.state.versionIterator)) {
-            let record = await getProjectRequest(this.state.prj, this.state.requestMethod, this.state.requestUri);
+            let record = await getProjectRequest(this.state.prj, this.state.initRequestMethod, this.state.initRequestUri);
             this.setState({
                 showFlg: true,
                 title: record[project_request_title],
@@ -127,7 +123,7 @@ class RequestSaveContainer extends Component {
                 ctime: record[project_request_ctime],
             });
         } else {
-            let record = await getVersionIteratorRequest(this.state.versionIterator, this.state.prj, this.state.requestMethod, this.state.requestUri);
+            let record = await getVersionIteratorRequest(this.state.versionIterator, this.state.prj, this.state.initRequestMethod, this.state.initRequestUri);
             this.setState({
                 showFlg: true,
                 title: record[iteration_request_title],
@@ -184,10 +180,13 @@ class RequestSaveContainer extends Component {
                 this.state.formRequestHeadData, this.state.formRequestBodyData, this.state.formRequestParamData, this.state.formResponseData
             );
         } else {
-            await editVersionIteratorRequest(this.state.versionIterator, this.state.prj, this.state.requestMethod, this.state.requestUri,
+            await editVersionIteratorRequest(
+                this.state.initRequestMethod, this.state.initRequestUri, 
+                this.state.versionIterator, this.state.prj, this.state.requestMethod, this.state.requestUri,
                 this.state.title, this.state.selectedFolder, 
                 this.state.formRequestHeadData, this.state.formRequestBodyData, this.state.formRequestParamData, this.state.formResponseData
             );
+            this.setState({initRequestMethod: this.state.requestMethod, initRequestUri: this.state.requestUri});
         }
         message.success("修改成功");
     }
@@ -332,22 +331,23 @@ class RequestSaveContainer extends Component {
                             <Select 
                                 style={{borderRadius: 0, width: 118}} 
                                 size='large' 
-                                disabled={ true }
-                                defaultValue={ this.state.requestMethod }>
+                                onChange={value => this.setState({requestMethod: value})}
+                                value={ this.state.requestMethod }>
                                 <Select.Option value={ REQUEST_METHOD_POST }>POST</Select.Option>
                                 <Select.Option value={ REQUEST_METHOD_GET }>GET</Select.Option>
                             </Select>
                             <Input 
                                 style={{borderRadius: 0}} 
                                 prefix={ isStringEmpty(this.state.requestHost) ? "{{" + ENV_VALUE_API_HOST + "}}" : this.state.requestHost } 
-                                disabled={ true }
-                                value={ this.state.requestUri } 
+                                value={ this.state.requestUri }
+                                onChange={ event => this.setState({requestUri: event.target.value}) }
                                 size='large' />
                             <Button 
+                                disabled={this.state.initRequestMethod !== this.state.requestMethod || this.state.initRequestUri !== this.state.requestUri}
                                 size='large' 
                                 type="primary" 
                                 style={{borderRadius: 0}} 
-                                href={"#/internet_request_send_by_api/" + this.props.match.params.params}
+                                href={"#/internet_request_send_by_api/" + this.state.versionIterator + "/" + this.state.prj + "/" + this.state.initRequestMethod + "/" + encode(this.state.initRequestUri)}
                                 >发送请求</Button>
                         </Flex>
                         <Tabs defaultActiveKey={ "body" } items={ this.getNavs() } />

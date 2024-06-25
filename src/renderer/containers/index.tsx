@@ -14,6 +14,7 @@ import {
     INTERNET_REQUEST,
     INTERNET_REQUEST_BY_HISTORY_ROUTE,
     INTERNET_REQUEST_BY_API_ROUTE,
+    HISTORY_REQUEST_TO_ITERATOR_ROUTE,
     REQUEST_TO_ITERATOR_ROUTE,
     REQUEST_ITERATOR_DETAIL_ROUTE,
     REQUEST_ITERATOR_LIST_ROUTE,
@@ -73,6 +74,7 @@ class MyRouter extends Component {
                                     <Route path={ VERSION_ITERATOR_DOC_ROUTE } component={VersionIteratorDocPage} />
                                     <Route path={ REQUEST_PROJECT_LIST_ROUTE } component={ProjectRequestListPage} />
                                     <Route path={ UNITTEST_ITERATOR_LIST_ROUTE } component={UnittestListVersionPage} />
+                                    <Route path={ HISTORY_REQUEST_TO_ITERATOR_ROUTE } component={RequestToSaveContainerPage} />
                                     <Route path={ UNITTEST_ITERATOR_EXECUTOR_LIST_ROUTE } component={UnittestExecutorListPage} />
                                     <Route path={ UNITTEST_STEP_ADD_ROUTE } component={UnittestStepPage} />
                                     <Route path={ UNITTEST_STEP_EDIT_ROUTE } component={UnittestStepPage} />
