@@ -105,7 +105,7 @@ class SingleUnitTestReport extends Component {
             {
                 key: '3',
                 label: '执行结果',
-                children: this.state.recentUnitTestReport[unittest_report_result] ? <span style={{color:"green"}}>成功</span> : <span style={{color:"red"}}>失败</span>,
+                children: this.state.recentUnitTestReport[unittest_report_result] === "success" ? <span style={{color:"green"}}>成功</span> : (this.state.recentUnitTestReport[unittest_report_result] === "failure" ? <span style={{color:"red"}}>失败</span> : <span style={{color:"yellow"}}>未知</span>),
             },
             {
                 key: '4',

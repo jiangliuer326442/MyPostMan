@@ -1,7 +1,8 @@
 import { Component, ReactNode } from 'react';
 import { connect } from 'react-redux';
-import { Breadcrumb, Layout, Flex, FloatButton, Collapse, Popconfirm, InputNumber, Descriptions, Form, Tooltip, Select, Divider, Table, message, Input, Space, Button } from "antd";
+import { Breadcrumb, Layout, Flex, ConfigProvider, FloatButton, Collapse, Popconfirm, InputNumber, Descriptions, Form, Tooltip, Select, Divider, Table, message, Input, Space, Button } from "antd";
 import { EyeOutlined, DeleteOutlined, FileTextOutlined } from '@ant-design/icons';
+import { TinyColor } from '@ctrl/tinycolor';
 import type { FormProps } from 'antd';
 // import * as Showdown from 'showdown';
 import { encode } from 'base-64';
@@ -34,6 +35,12 @@ type FieldType = {
     uri?: string;
 };
 
+const colorsAddRequestApi = ['#fc6076', '#ff9a44', '#ef9d43', '#e75516'];
+const getHoverColors = (colors: string[]) =>
+    colors.map((color) => new TinyColor(color).lighten(5).toString());
+const getActiveColors = (colors: string[]) =>
+    colors.map((color) => new TinyColor(color).darken(5).toString());
+
 let version_iterator_title = TABLE_VERSION_ITERATION_FIELDS.FIELD_NAME;
 let iteration_request_sort = TABLE_VERSION_ITERATION_REQUEST_FIELDS.FIELD_SORT;
 let version_iterator_uname = TABLE_VERSION_ITERATION_FIELDS.FIELD_CUNAME;
@@ -65,9 +72,9 @@ class RequestListVersion extends Component {
                     title: '接口地址',
                     dataIndex: iteration_request_uri,
                     render: (uri) => { 
-                        if (uri.length > 25) {
+                        if (uri.length > 50) {
                             return <Tooltip title={ uri } placement='right'>
-                                {"..." + uri.substring(uri.length - 25, uri.length)}
+                                {"..." + uri.substring(uri.length - 50, uri.length)}
                                 </Tooltip>;
                         } else {
                             return uri;
@@ -281,11 +288,27 @@ class RequestListVersion extends Component {
                                 </Form.Item>
 
                                 <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
-                                    <Button type="primary" htmlType="submit">
+                                    <Button htmlType="submit">
                                         搜索
                                     </Button>
                                 </Form.Item>
                             </Form>
+                            <ConfigProvider
+                                theme={{
+                                    components: {
+                                    Button: {
+                                        colorPrimary: `linear-gradient(90deg,  ${colorsAddRequestApi.join(', ')})`,
+                                        colorPrimaryHover: `linear-gradient(90deg, ${getHoverColors(colorsAddRequestApi).join(', ')})`,
+                                        colorPrimaryActive: `linear-gradient(90deg, ${getActiveColors(colorsAddRequestApi).join(', ')})`,
+                                        lineWidth: 0,
+                                    },
+                                    },
+                                }}
+                                >
+                                <Button type="primary" href={'#/interator_add_request/' + this.state.iteratorId} size="large">
+                                    新增接口
+                                </Button>
+                            </ConfigProvider>
                         </Flex>
                         {Object.keys(this.state.requestsJsxDividered).map(prj => (
                             <Flex vertical key={prj}>

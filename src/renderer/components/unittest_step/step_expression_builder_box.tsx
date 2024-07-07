@@ -262,7 +262,10 @@ class StepExpressionBuilderBox extends Component {
                                 style={{width: 445}}
                                 placeholder="数据源类型"
                                 value={ this.state.dataSourceType }
-                                onChange={value => this.setState({dataSourceType: value, responseTips: [], assertPrev: this.state.initializeAssertPrev, dataSource: {}}) }
+                                onChange={value => {
+                                    this.setState({dataSourceType: value, responseTips: [], assertPrev: this.state.initializeAssertPrev, dataSource: {}});
+                                    this.paramTips.setDataSourceType(value);
+                                }}
                             >
                                 <Select.Option value={ UNITTEST_DATASOURCE_TYPE_REF }>步骤参数/返回值</Select.Option>
                                 <Select.Option value={ UNITTEST_DATASOURCE_TYPE_ENV }>环境变量/固定值</Select.Option>

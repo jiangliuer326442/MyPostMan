@@ -8,6 +8,7 @@ import { decode } from 'base-64';
 import JsonView from 'react-json-view';
 import axios from 'axios';
 import { cloneDeep } from 'lodash';
+// import fs from 'fs-extra';
 
 const { Header, Content, Footer } = Layout;
 
@@ -17,6 +18,8 @@ import {
   paramToString,
 } from '../../util';
 import {
+  TABLE_FIELD_TYPE,
+  TABLE_FIELD_VALUE,
   isJsonString,
   cleanJson
 } from '../../util/json';
@@ -32,8 +35,11 @@ import {
   CONTENT_TYPE_JSON,
   CONTENT_TYPE,
   CONTENT_TYPE_URLENCODE,
+  CONTENT_TYPE_FORMDATA,
+  INPUTTYPE_TEXT,
+  INPUTTYPE_FILE,
+  ChannelsReadFileStr,
 } from '../../../config/global_config';
-import { TABLE_FIELD_VALUE } from '../../util/json';
 import RequestSendTips from '../../classes/RequestSendTips';
 import {
   getVersionIteratorRequest
@@ -56,6 +62,7 @@ let request_history_uri = TABLE_REQUEST_HISTORY_FIELDS.FIELD_URI;
 let request_history_method = TABLE_REQUEST_HISTORY_FIELDS.FIELD_REQUEST_METHOD;
 let request_history_head = TABLE_REQUEST_HISTORY_FIELDS.FIELD_REQUEST_HEADER;
 let request_history_body = TABLE_REQUEST_HISTORY_FIELDS.FIELD_REQUEST_BODY;
+let request_history_file = TABLE_REQUEST_HISTORY_FIELDS.FIELD_REQUEST_FILE;
 let request_history_param = TABLE_REQUEST_HISTORY_FIELDS.FIELD_REQUEST_PARAM;
 let request_history_response = TABLE_REQUEST_HISTORY_FIELDS.FIELD_RESPONSE_CONTENT;
 let request_history_jsonFlg = TABLE_REQUEST_HISTORY_FIELDS.FIELD_JSONFLG;
@@ -96,6 +103,7 @@ class RequestSendContainer extends Component {
       isResonseJson: false,
       requestHeadData: {},
       requestBodyData: {},
+      requestFileData: {},
       requestParamData: {},
       isResponseHtml: false,
       versionIterator: "",
@@ -108,6 +116,7 @@ class RequestSendContainer extends Component {
 
   getClearState() : object {
     return {
+      alertMessage: "",
       responseData: "",
       isResonseJson: false,
       isResponseHtml: false,
@@ -115,6 +124,14 @@ class RequestSendContainer extends Component {
   }
 
   async componentDidMount() {
+
+    window.electron.ipcRenderer.on(ChannelsReadFileStr, (key, path, blob) => {
+      if (this.state.requestFileData.hasOwnProperty(key)) {
+        let file = this.state.requestFileData[key];
+        file.blob = blob.buffer;
+      }
+    });
+
     if(Object.keys(this.props.match.params).length === 0) {
       this.setState({ showFlg:true });
     } else if ( 'id' in this.props.match.params) {
@@ -122,23 +139,26 @@ class RequestSendContainer extends Component {
       getRequestHistory(key, record => {
         let headerData = record[request_history_head];
         let contentType = headerData[CONTENT_TYPE];
+        let method = record[request_history_method];
+        this.setRequestMethod(method);
         this.setState({
           id: key,
           showFlg: true,
           prj: record[request_history_micro_service],
           env: record[request_history_env],
           requestUri: record[request_history_uri],
-          requestMethod: record[request_history_method],
+          requestMethod: method,
           responseData: record[request_history_response],
           isResonseJson: record[request_history_jsonFlg],
           isResponseHtml: record[request_history_htmlFlg],
           requestHeadData: headerData,
           contentType,
           requestBodyData: record[request_history_body],
+          requestFileData: record[request_history_file],
           requestParamData: record[request_history_param],
         });
       });
-    } else if ( 'iteratorId' in this.props.match.params) {
+    } else if ( 'prj' in this.props.match.params) {
       let versionIterator = this.props.match.params.iteratorId;
       let prj = this.props.match.params.prj;
       let requestMethod = this.props.match.params.method;
@@ -165,9 +185,20 @@ class RequestSendContainer extends Component {
         header = record[iteration_request_header];
         requestParam = record[iteration_request_param];
       }
-      let requestBodyData = cleanJson(body);
+      let file : any = {};
+      let realBody : any = {};
+      for (let _key in body) {
+        if (body[_key][TABLE_FIELD_TYPE] === "File") {
+          file[_key] = body[_key][TABLE_FIELD_VALUE];
+        } else {
+          realBody[_key] = body[_key];
+        }
+      }
+      this.setRequestMethod(method);
+      let requestBodyData = cleanJson(realBody);
       let requestHeadData = cleanJson(header);
       let requestParamData = cleanJson(requestParam);
+      let requestFileData = file;
       let contentType = requestHeadData[CONTENT_TYPE];
       this.setState({
         showFlg: true,
@@ -178,6 +209,7 @@ class RequestSendContainer extends Component {
         requestMethod: method,
         requestHeadData,
         requestBodyData,
+        requestFileData,
         requestParamData,
       });
     }
@@ -197,14 +229,53 @@ class RequestSendContainer extends Component {
       defaultKey = "body";
     }
     let state = this.getClearState();
-    state['requestMethod'] = value;
-    state['defaultTabKey'] = defaultKey;
+    state.requestMethod = value;
+    state.defaultTabKey = defaultKey;
     this.setState(state);
   };
 
   setRequestBodyData = (data: Array<any>) => {
     if (this.state.contentType === CONTENT_TYPE_JSON) {
       this.state.requestBodyData = JSON.parse(data);
+    } else if (this.state.contentType === CONTENT_TYPE_FORMDATA) {
+      let obj : any = {};
+      let file : any = this.state.requestFileData;
+      if (data.length > 0) {
+        for (let item of data) {
+          let value = item.value;
+          if (isStringEmpty(item.type)) return;
+          if (isStringEmpty(item.key)) return;
+          if (item.type === INPUTTYPE_TEXT) {
+            if (getType(value) === "Undefined") {
+              value = "";
+            }
+            obj[item.key] = value;
+            this.state.requestBodyData = obj;
+          } else if (item.type === INPUTTYPE_FILE) {
+            if (getType(value) === "File") {
+              let _file : any = {};
+              _file.name = value.name;
+              _file.type = value.type;
+              _file.path = value.path;
+              var reader = new FileReader();
+              reader.readAsArrayBuffer(value);
+              let that = this;
+              reader.onload = function(e) {
+                  var blob = e.target.result;
+                  _file.blob = blob;
+                  file[item.key] = _file;
+                  that.state.requestFileData = file;
+              };
+            } else if (item.key in this.state.requestFileData) {
+              if (!('blob' in file[item.key])) {
+                file[item.key].blob = "";
+                let path = file[item.key].path;
+                window.electron.ipcRenderer.sendMessage(ChannelsReadFileStr, item.key, path);
+              }
+            }
+          }
+        }
+      }
     } else {
       let obj = {};
       if (data.length > 0) {
@@ -311,12 +382,33 @@ class RequestSendContainer extends Component {
     }
     if (this.state.requestMethod === REQUEST_METHOD_POST) {
       let postData = this.requestSendTip.iteratorGetVarByKey(this.state.requestBodyData);
-      try {
-        response = await axios.post(url, postData, {
-          headers: headData
-        });
-      } catch (error) {
-        this.setState({alertMessage: error.message});
+
+      if (this.state.contentType === CONTENT_TYPE_FORMDATA) {
+        let formData = new FormData();
+        for (let _key in postData) {
+          formData.append(_key, postData[_key]);
+        }
+        for (let _key in this.state.requestFileData) {
+          let _file = this.state.requestFileData[_key];
+          const blobFile = new Blob([_file.blob], { type: _file.type });  
+          formData.append(_key, blobFile, _file.name);
+        }
+
+        try {
+          response = await axios.post(url, formData, {
+            headers: headData
+          });
+        } catch (error) {
+          this.setState({alertMessage: error.message});
+        }
+      } else {
+        try {
+          response = await axios.post(url, postData, {
+            headers: headData
+          });
+        } catch (error) {
+          this.setState({alertMessage: error.message});
+        }
       }
     } else if (this.state.requestMethod === REQUEST_METHOD_GET) {
       try {
@@ -337,23 +429,31 @@ class RequestSendContainer extends Component {
       } else {
         content = response.data;
       }
-      this.setState({ responseData : content, isResonseJson, isResponseHtml });
+      this.setState({ responseData : content, isResonseJson, isResponseHtml, alertMessage: "" });
       addRequestHistory(this.state.env, this.state.prj, this.state.requestUri, this.state.requestMethod,
-        this.state.requestHeadData, this.state.requestBodyData, this.state.requestParamData,
+        this.state.requestHeadData, this.state.requestBodyData, this.state.requestParamData, this.state.requestFileData,
         content, isResonseJson, isResponseHtml, key => this.setState({id: key}));
     }
   }
 
-  calculateFormBodyData = (requestBodyData) => {
+  calculateFormBodyData = (requestBodyData, requestFileData) => {
     if (this.state.contentType === CONTENT_TYPE_JSON) {
       return JSON.stringify(requestBodyData);
     } else {
       let list = [];
       for (let _key in requestBodyData) {
-          let item = {};
+          let item : any = {};
           item["key"] = _key;
           item["value"] = requestBodyData[_key];
+          item["type"] = INPUTTYPE_TEXT;
           list.push(item);
+      }
+      for (let _key in requestFileData) {
+        let item : any = {};
+        item["key"] = _key;
+        item["value"] = "";
+        item["type"] = INPUTTYPE_FILE;
+        list.push(item);
       }
       this.setRequestBodyData(list);
       return list;
@@ -408,7 +508,8 @@ class RequestSendContainer extends Component {
         key: 'body',
         label: '主体',
         children: <RequestSendBody 
-          obj={ this.calculateFormBodyData(this.state.requestBodyData) } 
+          obj={ this.calculateFormBodyData(this.state.requestBodyData, this.state.requestFileData) } 
+          file={ this.state.requestFileData }
           tips={ this.state.envKeys } 
           contentType={ this.state.contentType }
           cb={this.setRequestBodyData} 
@@ -446,14 +547,14 @@ class RequestSendContainer extends Component {
                       size='large' 
                       value={ this.state.requestMethod }
                       onChange={ this.setRequestMethod }>
-                      <Select.Option value={ REQUEST_METHOD_POST }>POST</Select.Option>
-                      <Select.Option value={ REQUEST_METHOD_GET }>GET</Select.Option>
+                      <Select.Option value={ REQUEST_METHOD_POST }>{ REQUEST_METHOD_POST }</Select.Option>
+                      <Select.Option value={ REQUEST_METHOD_GET }>{ REQUEST_METHOD_GET }</Select.Option>
                     </Select>
                     <Input 
                       style={{borderRadius: 0}} 
                       prefix={
                         <Tooltip placement='bottom' title={this.state.requestHost}>
-                          {this.state.requestHost.length > 25 ? this.state.requestHost.substring(0, 25) + "..." : this.state.requestHost}
+                          {this.state.requestHost.length > 50 ? this.state.requestHost.substring(0, 50) + "..." : this.state.requestHost}
                         </Tooltip> 
                       } 
                       onChange={this.setUri} 

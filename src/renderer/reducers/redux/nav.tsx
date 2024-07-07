@@ -24,7 +24,6 @@ import {
 import {
   ENV_LIST_ROUTE,
   PROJECT_LIST_ROUTE,
-  ENVVAR_LIST_ROUTE,
   VERSION_ITERATOR_LIST_ROUTE,
   INTERNET_REQUEST,
   REQUEST_HISTORY,
@@ -75,13 +74,6 @@ export default function (state = {
         ]
       },
       {
-        key: UNITTEST,
-        icon: <BugOutlined />,
-        label: '单测',
-        children: [
-        ]
-      },
-      {
         key: PROJECT,
         icon: <FlagOutlined />,
         label: '项目',
@@ -94,34 +86,26 @@ export default function (state = {
         label: '设置',
         children: [
           {
-            key: ENV_LIST_ROUTE,
-            label: (
-              <a href={ "#" + ENV_LIST_ROUTE } rel="noopener noreferrer">
-                开发环境
-              </a >
+            key: VERSION_ITERATOR_LIST_ROUTE,
+            label:(
+              <a href={ "#" + VERSION_ITERATOR_LIST_ROUTE } rel="noopener noreferrer">
+                版本迭代
+              </a>
             )
           },
           {
             key: PROJECT_LIST_ROUTE,
             label: (
               <a href={ "#" + PROJECT_LIST_ROUTE } rel="noopener noreferrer">
-                微服务
+                项目
               </a >
             )
           },
           {
-            key: ENVVAR_LIST_ROUTE,
+            key: ENV_LIST_ROUTE,
             label: (
-              <a href={ "#" + ENVVAR_LIST_ROUTE } rel="noopener noreferrer">
-                环境变量
-              </a >
-            )
-          },
-          {
-            key: VERSION_ITERATOR_LIST_ROUTE,
-            label: (
-              <a href={ "#" + VERSION_ITERATOR_LIST_ROUTE } rel="noopener noreferrer">
-                版本迭代
+              <a href={ "#" + ENV_LIST_ROUTE } rel="noopener noreferrer">
+                开发环境
               </a >
             )
           },
@@ -145,28 +129,18 @@ export default function (state = {
       for( let versionIterator of action.versionIterators) {
         if (versionIterator[version_iterator_openFlg] === 0) continue;
         selectedVersionIteratorNav.children.push({
-          key: "version_iterator_requests_" + versionIterator[version_iterator_uuid],
-          label: (
-              <a href={"#/version_iterator_requests/" + versionIterator[version_iterator_uuid] } rel="noopener noreferrer">{ versionIterator[version_iterator_title] }</a>
-          )
-        });
-      }
-
-      let selecteUnitTestNav : any;
-      for (let nav of verIteratorNavs) {
-        if(nav.key === UNITTEST) {
-          selecteUnitTestNav = nav;
-        }
-      }
-      selecteUnitTestNav.children = [];
-
-      for( let versionIterator of action.versionIterators) {
-        if (versionIterator[version_iterator_openFlg] === 0) continue;
-        selecteUnitTestNav.children.push({
-          key: "version_iterator_tests_" + versionIterator[version_iterator_uuid],
-          label: (
-            <a href={"#/version_iterator_tests/" + versionIterator[version_iterator_uuid] } rel="noopener noreferrer">{ versionIterator[version_iterator_title] }</a >
-          )
+          key: ITERATOR + "_" + versionIterator[version_iterator_uuid],
+          label: versionIterator[version_iterator_title],
+          children: [
+            {
+              key: ITERATOR + "_" + versionIterator[version_iterator_uuid] + "_doc",
+              label: <a href={"#/version_iterator_requests/" + versionIterator[version_iterator_uuid] } rel="noopener noreferrer">文档</a >
+            },
+            {
+              key: ITERATOR + "_" + versionIterator[version_iterator_uuid] + "_unittest",
+              label: <a href={"#/version_iterator_tests/" + versionIterator[version_iterator_uuid] } rel="noopener noreferrer">单测</a >
+            }
+          ],
         });
       }
 
@@ -177,7 +151,7 @@ export default function (state = {
     case GET_PRJS:
       let projectNavs = cloneDeep(state.navs);
 
-      let selectedProjectNav;
+      let selectedProjectNav : any;
       for (let nav of projectNavs) {
         if(nav.key === PROJECT) {
           selectedProjectNav = nav;
@@ -188,9 +162,17 @@ export default function (state = {
       for( let prj of action.prjs) {
         selectedProjectNav.children.push({
           key: prj[prj_label],
-          label: (
-              <a href={"#/project_requests/" + prj[prj_label] } rel="noopener noreferrer">{ prj[prj_remark] }</a>
-          )
+          label: prj[prj_remark],
+          children: [
+            {
+              key: prj[prj_label] + "_envvar",
+              label: <a href={"#/envvars/" + prj[prj_label] } rel="noopener noreferrer">环境变量</a >
+            },
+            {
+            key: prj[prj_label] + "_doc",
+            label: <a href={"#/project_requests/" + prj[prj_label] } rel="noopener noreferrer">文档</a >
+            }
+          ]
         });
       }
       return Object.assign({}, state, {

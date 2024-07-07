@@ -4,7 +4,14 @@ import axios from 'axios';
 import { Breadcrumb, Layout, FloatButton } from "antd";
 import { FileMarkdownOutlined, Html5Outlined, ExportOutlined } from '@ant-design/icons';
 
-import { ChannelsMarkdownStr, ChannelsMarkdownShowStr, ChannelsMarkdownSaveMarkdownStr, ChannelsMarkdownSaveHtmlStr } from '../../../config/global_config';
+import { 
+    ChannelsMarkdownStr, 
+    ChannelsMarkdownShowStr, 
+    ChannelsMarkdownSaveMarkdownStr, 
+    ChannelsMarkdownSaveHtmlStr,
+    CONTENT_TYPE,
+    CONTENT_TYPE_URLENCODE,
+} from '../../../config/global_config';
 import MarkdownView from '../../components/markdown/show';
 import { getPrjs } from '../../actions/project';
 import { getVersionIterator } from '../../actions/version_iterator';
@@ -36,10 +43,11 @@ class IteratorDoc extends Component {
                     iteratorId: this.state.iteratorId 
                 }, {
                     headers: {
-                        "Content-Type": "application/x-www-form-urlencoded",
+                        "Content-Type": CONTENT_TYPE_URLENCODE,
                     }
                 }).then(response => {
                     this.setState({md: response.data.data.markdown});
+                    document.title = response.data.data.title;
                 });
             } catch (error) {
                 console.error(error);

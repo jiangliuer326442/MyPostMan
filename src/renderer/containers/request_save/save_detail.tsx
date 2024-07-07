@@ -90,7 +90,7 @@ class RequestSaveContainer extends Component {
             isResponseHtml: false,
             stopFlg : true,
             showFlg : false,
-            versionIterator: props.match.params.iteratorId,
+            versionIterator: props.match.params.iteratorId ? props.match.params.iteratorId : "",
             selectedFolder: "",
             folderName: "",
             cname: "",
@@ -270,7 +270,7 @@ class RequestSaveContainer extends Component {
                                 {
                                     key: 'iterator',
                                     label: '迭代',
-                                    children: this.props.versionIterators.find(row => row[version_iterator_uuid] === this.state.versionIterator) ? this.props.versionIterators.find(row => row[version_iterator_uuid] === this.state.versionIterator)[version_iterator_name] : "无迭代",
+                                    children: this.props.versionIterators.find(row => row[version_iterator_uuid] === this.state.versionIterator) ? this.props.versionIterators.find(row => row[version_iterator_uuid] === this.state.versionIterator)[version_iterator_name] : "不属于任何迭代",
                                 },
                                 {
                                     key: 'prj',
@@ -333,8 +333,8 @@ class RequestSaveContainer extends Component {
                                 size='large' 
                                 onChange={value => this.setState({requestMethod: value})}
                                 value={ this.state.requestMethod }>
-                                <Select.Option value={ REQUEST_METHOD_POST }>POST</Select.Option>
-                                <Select.Option value={ REQUEST_METHOD_GET }>GET</Select.Option>
+                                <Select.Option value={ REQUEST_METHOD_POST }>{ REQUEST_METHOD_POST }</Select.Option>
+                                <Select.Option value={ REQUEST_METHOD_GET }>{ REQUEST_METHOD_GET }</Select.Option>
                             </Select>
                             <Input 
                                 style={{borderRadius: 0}} 
@@ -347,10 +347,10 @@ class RequestSaveContainer extends Component {
                                 size='large' 
                                 type="primary" 
                                 style={{borderRadius: 0}} 
-                                href={"#/internet_request_send_by_api/" + this.state.versionIterator + "/" + this.state.prj + "/" + this.state.initRequestMethod + "/" + encode(this.state.initRequestUri)}
+                                href={this.state.versionIterator ? "#/internet_request_send_by_api/" + this.state.versionIterator + "/" + this.state.prj + "/" + this.state.initRequestMethod + "/" + encode(this.state.initRequestUri) : "#/internet_request_send_by_api/" + this.state.prj + "/" + this.state.initRequestMethod + "/" + encode(this.state.initRequestUri)}
                                 >发送请求</Button>
                         </Flex>
-                        <Tabs defaultActiveKey={ "body" } items={ this.getNavs() } />
+                        <Tabs defaultActiveKey={ this.state.requestMethod === REQUEST_METHOD_POST ? "body" : "params" } items={ this.getNavs() } />
                         <Divider orientation="left">响应</Divider>
                         <Flex>
                             <JsonSaveTableComponent readOnly={ true } object={this.state.formResponseData} cb={obj=>this.setState({formResponseData: obj})} />

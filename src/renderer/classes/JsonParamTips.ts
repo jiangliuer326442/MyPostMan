@@ -1,8 +1,8 @@
 import { cloneDeep } from 'lodash';
 
 import RequestSendTips from '../classes/RequestSendTips';
-import { isStringEmpty } from "../util";
-import { TABLE_FIELD_TYPE, TABLE_FIELD_REMARK, TABLE_FIELD_VALUE } from '../util/json';
+import { isStringEmpty, getType } from "../util";
+import { TABLE_FIELD_TYPE, TABLE_FIELD_REMARK, TABLE_FIELD_VALUE, TABLE_FIELD_NECESSARY } from '../util/json';
 import { 
     UNITTEST_FUNCTION_ARRAY_FIRST,
     UNITTEST_STEP_CURRENT,
@@ -62,7 +62,13 @@ export default class {
         this.project = project;
         this.currentProject = project;
         this.dispatch = dispatch;
-        this.parseFromStandardExpression(content);
+        if (getType(content) === "String") {
+            this.parseFromStandardExpression(content);
+        } else {
+            //环境变量 & 固定值
+            this.dataSourceType = UNITTEST_DATASOURCE_TYPE_ENV;
+            this.assertPrev = content;
+        }
 
         this.envVarTips = new RequestSendTips();
         this.envVarTips.init(this.currentProject, this.env, this.dispatch, env_vars => {});
@@ -74,6 +80,10 @@ export default class {
 
     getDataSourceType() : string | null {
         return this.dataSourceType;
+    }
+
+    setDataSourceType(dataSourceType: string) {
+        this.dataSourceType = dataSourceType;
     }
 
     getSelectedStep() : string {
@@ -109,70 +119,72 @@ export default class {
         if (isStringEmpty(text)) {
             cb(result);
         }
-
-        if (text.indexOf("{{") === 0) {
-            this.envVarTips.getTips(envKeys => {
-                let searchContent = text.substring(2);
-                let responseTips : Array<any> = [];
-                for (let envKey of envKeys) {
-                    if (!isStringEmpty(searchContent) && envKey.toLowerCase().indexOf(searchContent.toLowerCase()) < 0) {
-                        continue;
+        //环境变量 & 固定值
+        if (this.dataSourceType === UNITTEST_DATASOURCE_TYPE_ENV) {
+            if (text.indexOf("{{") === 0) {
+                this.envVarTips.getTips(envKeys => {
+                    let searchContent = text.substring(2);
+                    let responseTips : Array<any> = [];
+                    for (let envKey of envKeys) {
+                        if (!isStringEmpty(searchContent) && envKey.toLowerCase().indexOf(searchContent.toLowerCase()) < 0) {
+                            continue;
+                        }
+                        let responseTipItem : any = {};
+                        responseTipItem.value = "{{" + envKey + "}}";
+                        responseTipItem.label = envKey;
+                        responseTips.push(responseTipItem);
                     }
-                    let responseTipItem : any = {};
-                    responseTipItem.value = "{{" + envKey + "}}";
-                    responseTipItem.label = envKey;
-                    responseTips.push(responseTipItem);
-                }
-                cb(responseTips);
-            });
-            return;
-        }
-
-        let jsonObject : any = cloneDeep(this.dataSourceJson);
-        let textArr;
-        if(text.indexOf(".") > 0) {
-            textArr = text.split(".");
-        } else {
-            textArr = [text];
-        }
-
-        let tipsBefore = "";
-
-        if (textArr.length > 1) {
-            for (let i = 0; i < textArr.length - 1; i++) {
-                let objectKey = textArr[i];
-                //函数
-                if (objectKey.indexOf('*') === 0) {
-                    jsonObject[TABLE_FIELD_TYPE] = "Object";
-                } else {
-                    jsonObject = jsonObject[objectKey];
-                }
-                tipsBefore += objectKey + ".";
-                text = text.substring(tipsBefore.length);
+                    cb(responseTips);
+                });
             }
-        } 
-        let structType = jsonObject[TABLE_FIELD_TYPE];
-
-        if (structType === "Array") {
-            let item : any = {};
-            item.label = UNITTEST_FUNCTION_ARRAY_FIRST;
-            item.value = tipsBefore + UNITTEST_FUNCTION_ARRAY_FIRST;
-            result.push(item);
-
-            item = {};
-            item.label = UNITTEST_FUNCTION_ARRAY_RANDOM;
-            item.value = tipsBefore + UNITTEST_FUNCTION_ARRAY_RANDOM;
-            result.push(item);
         } else {
-            delete jsonObject[TABLE_FIELD_TYPE];
-            delete jsonObject[TABLE_FIELD_REMARK];
-            delete jsonObject[TABLE_FIELD_VALUE];
-            let tips = Object.keys(jsonObject).filter(key => (key.toLowerCase().indexOf(text) >= 0));
-            for(let tip of tips) {
+            let jsonObject : any = cloneDeep(this.dataSourceJson);
+            let textArr;
+            if(text.indexOf(".") > 0) {
+                textArr = text.split(".");
+            } else {
+                textArr = [text];
+            }
+
+            let tipsBefore = "";
+
+            if (textArr.length > 1) {
+                for (let i = 0; i < textArr.length - 1; i++) {
+                    let objectKey = textArr[i];
+                    //函数
+                    if (objectKey.indexOf('*') === 0) {
+                        jsonObject[TABLE_FIELD_TYPE] = "Object";
+                    } else {
+                        jsonObject = jsonObject[objectKey];
+                    }
+                    tipsBefore += objectKey + ".";
+                    text = text.substring(tipsBefore.length);
+                }
+            } 
+            let structType = jsonObject[TABLE_FIELD_TYPE];
+
+            if (structType === "Array") {
                 let item : any = {};
-                item.label = tip;
-                item.value = tipsBefore + tip;
+                item.label = UNITTEST_FUNCTION_ARRAY_FIRST;
+                item.value = tipsBefore + UNITTEST_FUNCTION_ARRAY_FIRST;
                 result.push(item);
+
+                item = {};
+                item.label = UNITTEST_FUNCTION_ARRAY_RANDOM;
+                item.value = tipsBefore + UNITTEST_FUNCTION_ARRAY_RANDOM;
+                result.push(item);
+            } else {
+                delete jsonObject[TABLE_FIELD_TYPE];
+                delete jsonObject[TABLE_FIELD_REMARK];
+                delete jsonObject[TABLE_FIELD_VALUE];
+                delete jsonObject[TABLE_FIELD_NECESSARY];
+                let tips = Object.keys(jsonObject).filter(key => (key.toLowerCase().indexOf(text) >= 0));
+                for(let tip of tips) {
+                    let item : any = {};
+                    item.label = tip;
+                    item.value = tipsBefore + tip;
+                    result.push(item);
+                }
             }
         }
 
@@ -184,7 +196,9 @@ export default class {
         unittest_executor_iterator : string, unittest_executor_unittest : string, unittest_executor_batch : string) {
         //环境变量 固定值
         if (this.dataSourceType === UNITTEST_DATASOURCE_TYPE_ENV) {
-            let value = this.assertPrev as string;
+            if (this.assertPrev === undefined) return "";
+            if (getType(this.assertPrev) === "Number") return this.assertPrev;
+            let value = this.assertPrev as String;
             let beginIndex = value.indexOf("{{");
             let endIndex = value.indexOf("}}");
             if (beginIndex >= 0 && endIndex >= 0 && beginIndex < endIndex) {

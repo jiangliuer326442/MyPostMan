@@ -19,7 +19,7 @@ import {
 
 import { isStringEmpty, getType } from '../../../renderer/util';
 import { 
-    TABLE_FIELD_NAME, TABLE_FIELD_REMARK, TABLE_FIELD_TYPE, TABLE_FIELD_VALUE, 
+    TABLE_FIELD_NAME, TABLE_FIELD_REMARK, TABLE_FIELD_TYPE, TABLE_FIELD_VALUE, TABLE_FIELD_NECESSARY,
     prettyJson, isInnerKey
 } from '../../../renderer/util/json';
 
@@ -61,11 +61,13 @@ function iteratorObjectToArr(returnList, parentKey, jsonObject) {
         let fieldName = isStringEmpty(parentKey) ? _key : (parentKey + "." + _key);
         let remark = _object[TABLE_FIELD_REMARK];
         let type = _object[TABLE_FIELD_TYPE];
+        let necessary = _object[TABLE_FIELD_NECESSARY];
         let value = _object[TABLE_FIELD_VALUE] ? _object[TABLE_FIELD_VALUE] : "";
         let _item : any = {};
         _item[TABLE_FIELD_NAME] = fieldName;
         _item[TABLE_FIELD_REMARK] = remark;
         _item[TABLE_FIELD_TYPE] = type;
+        _item[TABLE_FIELD_NECESSARY] = necessary;
         _item[TABLE_FIELD_VALUE] = value;
         returnList.push(_item);
 
@@ -102,12 +104,14 @@ export default function (mainWindow : BrowserWindow){
         if (action !== ChannelsMarkdownQueryResultStr) return;
         let iterationUUID = versionIteration[version_iterator_uuid];
         if (iterationUUID === iteratorId) {
+            let iteratorTitle = versionIteration[version_iterator_title];
             let markdownContent = getMarkDownContent(versionIteration, version_iteration_requests, prjs);
             const data = {
                 code: 1000,
                 message: '',
                 data: {
-                  markdown: markdownContent
+                    title: iteratorTitle,
+                    markdown: markdownContent
                 }
             };
             res.json(data);
@@ -176,6 +180,7 @@ export default function (mainWindow : BrowserWindow){
     ipcMain.on(ChannelsMarkdownStr, (event, action, versionIteration, version_iteration_requests, prjs) => {
         
         if (action !== ChannelsMarkdownShowStr) return;
+
         let iterationUUID = versionIteration[version_iterator_uuid];
         let markdownContent = getMarkDownContent(versionIteration, version_iteration_requests, prjs);
 
@@ -185,7 +190,6 @@ export default function (mainWindow : BrowserWindow){
 }
 
 function getMarkDownContent(versionIteration, version_iteration_requests, prjs) : string {
-
     let markdownContent = "";
 
     let formattedRequests : any = {};
@@ -256,12 +260,23 @@ function getMarkDownContent(versionIteration, version_iteration_requests, prjs) 
 
                 let bodyList = [];
                 iteratorObjectToArr(bodyList, "", _request[iteration_request_body]);
-    
+
                 markdownContent += "**Body：**\n";
-                markdownContent += "| 参数名       | 参数类型 | 备注 | 示例 |\n";
-                markdownContent += "| ------------ | -------- | ---- | ----------------------- |\n";
+                markdownContent += "| 参数名       | 参数类型 | 必填 | 备注 | 示例 |\n";
+                markdownContent += "| ------------ | -------- | ---- | ---- | ----------------------- |\n";
                 bodyList.map(_bodyItem => {
-                    markdownContent += "| " + _bodyItem[TABLE_FIELD_NAME] + " | " + _bodyItem[TABLE_FIELD_TYPE] + " | " + _bodyItem[TABLE_FIELD_REMARK] + " | " + _bodyItem[TABLE_FIELD_VALUE] + " |\n";
+
+                    let _value = "";
+                    if (_bodyItem[TABLE_FIELD_TYPE] === "File") {
+                        _value = _bodyItem[TABLE_FIELD_VALUE].name;
+                        if(_value != null && _value.length > 50) {
+                            _value = _value.substring(0, 50) + "...";
+                        }
+                    } else {
+                        _value = _bodyItem[TABLE_FIELD_VALUE];
+                    }
+
+                    markdownContent += "| " + _bodyItem[TABLE_FIELD_NAME] + " | " + _bodyItem[TABLE_FIELD_TYPE] + " | " + (_bodyItem[TABLE_FIELD_NECESSARY] == 0 ? "" : "✅") + " | " + _bodyItem[TABLE_FIELD_REMARK] + " | " + _value + " |\n";
                 })
                 markdownContent += "\n";
     

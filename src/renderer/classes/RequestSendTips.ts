@@ -124,7 +124,7 @@ export default class {
                 }
             } else if (getType(value) === "Object") {
                 this.iteratorGetEnvValue(value);
-            } else {
+            } else if (getType(value) === "String") {
                 let beginIndex = value.indexOf("{{");
                 let endIndex = value.indexOf("}}");
                 if (beginIndex >= 0 && endIndex >= 0 && beginIndex < endIndex) {

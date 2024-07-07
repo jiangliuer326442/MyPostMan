@@ -6,13 +6,18 @@ import {
     Select, Form, message
 } from "antd";
 import type { MenuProps } from 'antd';
-import { EditOutlined, DeleteOutlined, MoreOutlined, CarryOutOutlined, BugOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, MoreOutlined, CarryOutOutlined } from '@ant-design/icons';
 
 import { 
     TABLE_UNITTEST_FIELDS,
     TABLE_UNITTEST_STEPS_FIELDS,
     TABLE_UNITTEST_EXECUTOR_REPORT_FIELDS,
 } from '../../../config/db';
+import {
+    UNITTEST_RESULT_SUCCESS,
+    UNITTEST_RESULT_FAILURE,
+    UNITTEST_RESULT_UNKNOWN
+} from '../../../config/unittest';
 import {
     SHOW_ADD_UNITTEST_MODEL,
     SHOW_EDIT_UNITTEST_MODEL
@@ -24,6 +29,7 @@ import {
     delUnitTest, 
     delUnitTestStep,
     executeUnitTest,
+    continueExecuteUnitTest,
 } from '../../actions/unittest';
 import SingleUnitTestReport from '../../components/unittest/single_unittest_report';
 import AddUnittestComponent from '../../components/unittest/add_unittest';
@@ -41,6 +47,8 @@ let unittest_step_uuid = TABLE_UNITTEST_STEPS_FIELDS.FIELD_UUID;
 
 let unittest_report_result = TABLE_UNITTEST_EXECUTOR_REPORT_FIELDS.FIELD_RESULT;
 let unittest_report_env = TABLE_UNITTEST_EXECUTOR_REPORT_FIELDS.FIELD_ENV;
+let unittest_report_step = TABLE_UNITTEST_EXECUTOR_REPORT_FIELDS.FIELD_STEP;
+let unittest_report_batch = TABLE_UNITTEST_EXECUTOR_REPORT_FIELDS.FIELD_BATCH_UUID;
 let unittest_report_cost_time = TABLE_UNITTEST_EXECUTOR_REPORT_FIELDS.FIELD_COST_TIME;
 
 class UnittestListVersion extends Component {
@@ -62,12 +70,25 @@ class UnittestListVersion extends Component {
                     title: '执行结果',
                     dataIndex: unittest_report_result,
                     render: (result, record) => {
-                        if (result === undefined) {
-                            return <span style={{color:"yellow"}}>未执行</span>;
-                        } else if (result) {
-                            return <span style={{color:"green"}}>成功</span>;
+                        //整体
+                        if (record[unittest_folder] !== undefined) {
+                            if (result === undefined) {
+                                return <span style={{color:"yellow"}}>未执行</span>;
+                            } else if (result === UNITTEST_RESULT_SUCCESS) {
+                                return <span style={{color:"green"}}>成功</span>;
+                            } else if (result === UNITTEST_RESULT_FAILURE) {
+                                return <span style={{color:"red"}}>失败</span>;
+                            } else {
+                                return <span style={{color:"yellow"}}>未知</span>;
+                            }
                         } else {
-                            return <span style={{color:"red"}}>失败</span>;
+                            if (result === undefined) {
+                                return <span style={{color:"yellow"}}>未执行</span>;
+                            } else if (result) {
+                                return <span style={{color:"green"}}>成功</span>;
+                            } else {
+                                return <span style={{color:"red"}}>失败</span>;
+                            }
                         }
                     }
                 },
@@ -76,10 +97,10 @@ class UnittestListVersion extends Component {
                     dataIndex: unittest_report_cost_time,
                     render: (cost_time, record) => {
                         let result = record[unittest_report_result];
-                        if (result === undefined || !result) {
-                            return "--";
-                        } else if (result) {
+                        if (result === "success") {
                             return cost_time + "毫秒";
+                        } else if (result) {
+                            return "--";
                         }
                     }
                 },
@@ -123,10 +144,30 @@ class UnittestListVersion extends Component {
                                 </Space>
                             );
                         } else {
+                            //整体单测的 uuid
                             let valueUnittestStepUnittestUuid = record[unittest_step_unittest_uuid];
+                            //当前步骤的 uuid
                             let valueUnittestStepUuid = record[unittest_step_uuid];
+                            //报告中的下一步
+                            let valueUnittestReportStep = record[unittest_report_step];
                             return (
                                 <Space>
+                                    {valueUnittestStepUuid === valueUnittestReportStep ? 
+                                    <Button type="link" onClick={async ()=>{
+                                        this.setState({
+                                            executeFlg: false,
+                                            unittestUuid: "",
+                                            batchUuid: "",
+                                        });
+
+                                        let batchUuid = await continueExecuteUnitTest(iteratorId, valueUnittestStepUnittestUuid, record[unittest_report_batch], valueUnittestReportStep, record[unittest_report_env], this.props.dispatch);
+
+                                        this.setState({
+                                            unittestUuid: valueUnittestStepUnittestUuid,
+                                            batchUuid,
+                                        })
+                                    }}>继续执行</Button>
+                                    : null}
                                     <Button icon={<EditOutlined />} type='link' href={ "#/version_iterator_tests_step_edit/" + this.state.iteratorId + "/" + valueUnittestStepUnittestUuid + "/" + valueUnittestStepUuid } />
                                     <Popconfirm
                                         title="删除测试用例步骤"

@@ -10,13 +10,22 @@ import {
 } from '../../config/db';
 
 import {
+    ChannelsReadFileStr,
+    CONTENT_TYPE,
+    CONTENT_TYPE_FORMDATA,
     REQUEST_METHOD_GET,
     REQUEST_METHOD_POST
 } from '../../config/global_config';
 
+import {
+    UNITTEST_RESULT_SUCCESS,
+    UNITTEST_RESULT_FAILURE,
+    UNITTEST_RESULT_UNKNOWN
+} from '../../config/unittest';
+
 import { GET_ITERATOR_TESTS } from '../../config/redux';
 
-import { isStringEmpty, paramToString } from '../util';
+import { getType, isStringEmpty, paramToString } from '../util';
 
 import { isJsonString } from '../util/json';
 
@@ -43,6 +52,7 @@ let unittest_step_uri = TABLE_UNITTEST_STEPS_FIELDS.FIELD_URI;
 let unittest_step_header = TABLE_UNITTEST_STEPS_FIELDS.FIELD_REQUEST_HEADER;
 let unittest_step_param = TABLE_UNITTEST_STEPS_FIELDS.FIELD_REQUEST_PARAM;
 let unittest_step_body = TABLE_UNITTEST_STEPS_FIELDS.FIELD_REQUEST_BODY;
+let unittest_step_continue = TABLE_UNITTEST_STEPS_FIELDS.FIELD_CONTINUE;
 let unittest_step_sort = TABLE_UNITTEST_STEPS_FIELDS.FIELD_SORT;
 let unittest_step_cuid = TABLE_UNITTEST_STEPS_FIELDS.FIELD_CUID;
 let unittest_step_cuname = TABLE_UNITTEST_STEPS_FIELDS.FIELD_CUNAME;
@@ -84,6 +94,7 @@ let unittest_report_batch = TABLE_UNITTEST_EXECUTOR_REPORT_FIELDS.FIELD_BATCH_UU
 let unittest_report_delFlg = TABLE_UNITTEST_EXECUTOR_REPORT_FIELDS.FIELD_DELFLG;
 let unittest_report_ctime = TABLE_UNITTEST_EXECUTOR_REPORT_FIELDS.FIELD_CTIME;
 let unittest_report_result = TABLE_UNITTEST_EXECUTOR_REPORT_FIELDS.FIELD_RESULT;
+let unittest_report_step = TABLE_UNITTEST_EXECUTOR_REPORT_FIELDS.FIELD_STEP;
 let unittest_report_cost_time = TABLE_UNITTEST_EXECUTOR_REPORT_FIELDS.FIELD_COST_TIME;
 let unittest_report_failure_reason = TABLE_UNITTEST_EXECUTOR_REPORT_FIELDS.FIELD_REASON;
 
@@ -109,7 +120,7 @@ export async function addUnitTestStep(
     title : string, project : string, method: string, uri : string,
     header: object, param: object, body: object,
     assertTitleArr: Array<string>, assertPrevArr: Array<string>, assertOperatorArr: Array<string>, assertAfterArr: Array<string>,
-    sort: number,
+    sort: number, continueEnable: string,
     device : object, cb) {
         window.db.transaction('rw',
             window.db[TABLE_UNITTEST_STEPS_NAME],
@@ -129,6 +140,7 @@ export async function addUnitTestStep(
                 unit_test_step[unittest_step_header] = header;
                 unit_test_step[unittest_step_param] = param;
                 unit_test_step[unittest_step_body] = body;
+                unit_test_step[unittest_step_continue] = continueEnable;
                 unit_test_step[unittest_step_sort] = sort;
                 unit_test_step[unittest_step_cuid] = device.uuid;
                 unit_test_step[unittest_step_cuname] = device.uname;
@@ -185,7 +197,7 @@ export async function editUnitTestStep(
     unittest_step_uuid : string, title : string,
     header: object, param: object, body: object,
     assertTitleArr: Array<string>, assertPrevArr: Array<string>, assertOperatorArr: Array<string>, assertAfterArr: Array<string>, 
-    assertUuidArr: Array<string>, sort: number, device: any, cb) {
+    assertUuidArr: Array<string>, sort: number, continueEnable: string, device: any, cb) {
     await window.db.open();
 
     let unit_test_step = await window.db[TABLE_UNITTEST_STEPS_NAME]
@@ -198,6 +210,7 @@ export async function editUnitTestStep(
         unit_test_step[unittest_step_param] = param;
         unit_test_step[unittest_step_body] = body;
         unit_test_step[unittest_step_sort] = sort;
+        unit_test_step[unittest_step_continue] = continueEnable;
         await window.db[TABLE_UNITTEST_STEPS_NAME].put(unit_test_step);
     }
 
@@ -273,7 +286,7 @@ export async function delUnitTestStep(unittestStepUuid : string, cb) {
     await window.db.open();
 
     let unitTestStep = await window.db[TABLE_UNITTEST_STEPS_NAME]
-    .where(unittest_step_uuid).equals(unittestStepUuid)
+    .where(field_unittest_step_uuid).equals(unittestStepUuid)
     .first();
 
     if (unitTestStep !== undefined) {
@@ -286,6 +299,7 @@ export async function delUnitTestStep(unittestStepUuid : string, cb) {
 export async function getUnitTests(iteratorId : string, env : string|null, dispatch) {
     await window.db.open();
 
+    //单测列表
     let unitTests = await window.db[TABLE_UNITTEST_NAME]
     .where([unittest_delFlg, unittest_iterator_uuid])
     .equals([0, iteratorId])
@@ -311,9 +325,12 @@ export async function getUnitTests(iteratorId : string, env : string|null, dispa
             .first();
         }
         if (unittestReport !== undefined) {
+            env = unittestReport[unittest_report_env];
             batch_uuid = unittestReport[unittest_report_batch];
+            unitTest[unittest_report_batch] = batch_uuid; //批次 id
+            unitTest[unittest_report_step] = unittestReport[unittest_report_step]; //执行 浮标
             unitTest[unittest_report_result] = unittestReport[unittest_report_result];
-            unitTest[unittest_report_env] = unittestReport[unittest_report_env];
+            unitTest[unittest_report_env] = env;
             unitTest[unittest_report_cost_time] = unittestReport[unittest_report_cost_time];
         }
 
@@ -322,8 +339,40 @@ export async function getUnitTests(iteratorId : string, env : string|null, dispa
         .equals([0, iteratorId, unittest_uuid])
         .toArray();
 
+        if (!isStringEmpty(unitTest[unittest_report_step])) {
+            if (unitTest[unittest_report_result] === UNITTEST_RESULT_UNKNOWN) {
+                let markFlg = -1;
+                for (let unitTestStep of unitTestSteps) {
+                    let stepUuid = unitTestStep[field_unittest_step_uuid];
+                    //还没打标，遇到数值一样的步骤，开始打标
+                    if (markFlg === -1 && stepUuid === unitTest[unittest_report_step]) {
+                        markFlg = 0;
+                        continue;
+                    }
+                    //打标
+                    if (markFlg === 0) {
+                        unitTest[unittest_report_step] = stepUuid;
+                        markFlg = 1;
+                        continue;
+                    }
+                    //已经打过标
+                    if (markFlg === 1) {
+                        break;
+                    }
+                }
+            } else {
+                unitTest[unittest_report_step] = "";
+            }
+        }
+
         if (!isStringEmpty(batch_uuid)) {
             for (let unitTestStep of unitTestSteps) {
+                //当前执行步骤
+                unitTestStep[unittest_report_step] = unitTest[unittest_report_step];
+                //当前执行批次
+                unitTestStep[unittest_report_batch] = batch_uuid;
+                //当前环境
+                unitTestStep[unittest_report_env] = env;
                 let stepUuid = unitTestStep[field_unittest_step_uuid];
                 let unittest_executor_report = await window.db[TABLE_UNITTEST_EXECUTOR_NAME]
                 .where([unittest_executor_iterator, unittest_executor_unittest, unittest_executor_batch, unittest_executor_step])
@@ -358,15 +407,81 @@ export async function getUnitTestStepAsserts(iteratorId : string, unitTestId : s
     return unitTestAsserts;
 }
 
+export async function continueExecuteUnitTest(
+    iteratorId : string, unitTestId : string, batchId : string, stepId : string,
+    env : string, dispatch : any) {
+
+    let allSteps = await window.db[TABLE_UNITTEST_STEPS_NAME]
+    .where([unittest_step_delFlg, unittest_step_iterator_uuid, unittest_step_unittest_uuid])
+    .equals([0, iteratorId, unitTestId])
+    .toArray();
+
+    let executeFlg = false;
+    let steps = [];
+    for (let _unit_test_step of allSteps) {  
+        let stepUuid = _unit_test_step[field_unittest_step_uuid];
+        if (stepUuid === stepId) {
+            executeFlg = true;
+        }
+        if (!executeFlg) {
+            continue;
+        }
+        steps.push(_unit_test_step);
+    }
+    let ret = await stepsExecutor(steps, iteratorId, unitTestId, batchId, env, dispatch);
+    let success = ret.success;
+    let recentStepUuid = ret.recentStepUuid;
+    let errorMessage = ret.errorMessage;
+    let btime = ret.btime;
+    let unitTestReport = await window.db[TABLE_UNITTEST_EXECUTOR_REPORT_NAME]
+    .where([unittest_report_iterator, unittest_report_unittest, unittest_report_batch])
+    .equals([iteratorId, unitTestId, batchId])
+    .first();
+    unitTestReport[unittest_report_result] = success;
+    unitTestReport[unittest_report_step] = recentStepUuid;
+    unitTestReport[unittest_report_failure_reason] = errorMessage;
+    unitTestReport[unittest_report_cost_time] = Date.now() - btime;
+    await window.db[TABLE_UNITTEST_EXECUTOR_REPORT_NAME].put(unitTestReport);
+    return batchId;
+}
+
+
 export async function executeUnitTest(
     iteratorId : string, unitTestId : string, 
     steps : Array<any>, env : string, dispatch : any) : Promise<string>
     {
     let batch_uuid = uuidv4() as string;
+
+    let ret = await stepsExecutor(steps, iteratorId, unitTestId, batch_uuid, env, dispatch);
+    let success = ret.success;
+    let recentStepUuid = ret.recentStepUuid;
+    let errorMessage = ret.errorMessage;
+    let btime = ret.btime;
+
+    let unittest_result : any = {};
+    unittest_result[unittest_report_iterator] = iteratorId;
+    unittest_result[unittest_report_env] = env;
+    unittest_result[unittest_report_unittest] = unitTestId;
+    unittest_result[unittest_report_batch] = batch_uuid;
+    unittest_result[unittest_report_delFlg] = 0;
+    unittest_result[unittest_report_ctime] = Date.now();
+    unittest_result[unittest_report_result] = success;
+    unittest_result[unittest_report_step] = recentStepUuid;
+    unittest_result[unittest_report_failure_reason] = errorMessage;
+    unittest_result[unittest_report_cost_time] = Date.now() - btime;
+
+    await window.db[TABLE_UNITTEST_EXECUTOR_REPORT_NAME].put(unittest_result);
+
+    return batch_uuid;
+}
+
+async function stepsExecutor(steps : Array<any>, iteratorId : string, unitTestId : string, batch_uuid : string, env : string, dispatch : any) : Promise<any> {
     let btime = Date.now();
-    let success = true;
+    let success = UNITTEST_RESULT_SUCCESS;
     let errorMessage = "";
-    for (let _unit_test_step of steps) {
+    let firstStepUuid = steps.at(0)[field_unittest_step_uuid];
+    let recentStepUuid = "";
+    for (let _unit_test_step of steps) {  
         let unit_test_step = cloneDeep(_unit_test_step);
         let stepUuid = unit_test_step[field_unittest_step_uuid];
         let project = unit_test_step[unittest_step_project];
@@ -374,6 +489,15 @@ export async function executeUnitTest(
         let header = unit_test_step[unittest_step_header];
         let param = unit_test_step[unittest_step_param];
         let body = unit_test_step[unittest_step_body];
+        let isContinue = unit_test_step[unittest_step_continue];
+        //不继续了，且不是最后一步，结果就是未知的，并且记录下最后执行的步骤 uuid，以便于继续执行
+        if (!(isContinue == 1) && stepUuid !== firstStepUuid) {
+            success = UNITTEST_RESULT_UNKNOWN;
+            break;
+        }
+        recentStepUuid = stepUuid;
+
+        let promises : any = {};
         let method = unit_test_step[unittest_step_method];
         let unitTestAsserts = await getUnitTestStepAsserts(iteratorId, unitTestId, stepUuid);
         let envVarTips = new RequestSendTips();
@@ -381,8 +505,13 @@ export async function executeUnitTest(
         let requestHost = await envVarTips.getHostAsync();
         let url = requestHost + requestUri;
 
+        let contentType = "";
+
         if (Object.keys(header).length > 0) {
             for (let _key in header) {
+                if (_key === CONTENT_TYPE) {
+                    contentType = header[_key];
+                }
                 let jsonParamTips = new JsonParamTips(project, header[_key], dispatch);
                 jsonParamTips.setEnv(env);
                 header[_key] = await jsonParamTips.getValue(envVarTips, param, header, body, {}, iteratorId, unitTestId, batch_uuid);
@@ -390,9 +519,32 @@ export async function executeUnitTest(
         }
         if (Object.keys(body).length > 0) {
             for (let _key in body) {
-                let jsonParamTips = new JsonParamTips(project, body[_key], dispatch);
-                jsonParamTips.setEnv(env);
-                body[_key] = await jsonParamTips.getValue(envVarTips, param, header, body, {}, iteratorId, unitTestId, batch_uuid);
+                if (contentType === CONTENT_TYPE_FORMDATA) {
+                    //文件类型取 blob 格式的数据
+                    if (getType(body[_key]) === "Object") {
+                        let path = body[_key].path;
+                        promises[_key] = {};
+                        promises[_key].promise = new Promise((resolve, reject) => {
+                            promises[_key].listener = window.electron.ipcRenderer.on(ChannelsReadFileStr, (key, path, blob) => {
+                                if (key === _key) {
+                                    let _file = body[_key];
+                                    _file.blob = blob.buffer;
+                                    resolve({key: _key, file: _file});
+                                }
+                            });
+                            window.electron.ipcRenderer.sendMessage(ChannelsReadFileStr, _key, path);
+                        });
+                    } else {
+                        let jsonParamTips = new JsonParamTips(project, body[_key], dispatch);
+                        jsonParamTips.setEnv(env);
+                        body[_key] = await jsonParamTips.getValue(envVarTips, param, header, body, {}, iteratorId, unitTestId, batch_uuid);
+                    }
+                } else {
+                    let jsonParamTips = new JsonParamTips(project, body[_key], dispatch);
+                    jsonParamTips.setEnv(env);
+                    body[_key] = await jsonParamTips.getValue(envVarTips, param, header, body, {}, iteratorId, unitTestId, batch_uuid);
+                }
+
             }
         }
         if (Object.keys(param).length > 0) {
@@ -412,12 +564,46 @@ export async function executeUnitTest(
         let executorBtime = Date.now();
 
         if (method === REQUEST_METHOD_POST) {
-            try {
-                response = await axios.post(url, body, {
-                  headers: header
-                });
-            } catch (error) {
-                errorMessage = error.message;
+            if (contentType === CONTENT_TYPE_FORMDATA) {
+                let formData = new FormData();
+                //有文件上传，需要等待文件上传完成再操作
+                if (Object.keys(promises).length > 0) {
+                    let promiseArr = [];
+                    for (let _key in promises) {
+                        promiseArr.push(promises[_key].promise);
+                    }
+                    //资源上传全部处理完成
+                    let values = await Promise.all(promiseArr);
+
+                    for (let _value of values) {
+                        let _key = _value.key;
+                        //移除监听器
+                        promises[_key].listener();
+                        //移除 body
+                        delete body[_key];
+                        let _file = _value.file;
+                        const blobFile = new Blob([_file.blob], { type: _file.type });  
+                        formData.append(_key, blobFile, _file.name);
+                    }
+                }
+                for (let _key in body) {
+                    formData.append(_key, body[_key]);
+                }
+                try {
+                    response = await axios.post(url, formData, {
+                        headers: header
+                    });
+                } catch (error) {
+                    errorMessage = error.message;
+                }
+            } else {
+                try {
+                    response = await axios.post(url, body, {
+                      headers: header
+                    });
+                } catch (error) {
+                    errorMessage = error.message;
+                }
             }
         } else if (method === REQUEST_METHOD_GET) {
             try {
@@ -463,8 +649,6 @@ export async function executeUnitTest(
                         assertRightValue[keyNumber] = assertRightValue[keyNumber].toString();
                     }
 
-                    console.debug(typeof assertRightValue[keyNumber]);
-
                     if (assertOperator === " == ") {
                         if (assertLeftValue[keyNumber] === assertRightValue[keyNumber]) {
                             breakFlg = false;
@@ -501,26 +685,20 @@ export async function executeUnitTest(
         unit_test_executor[unittest_executor_ctime] = Date.now();
         await window.db[TABLE_UNITTEST_EXECUTOR_NAME].put(unit_test_executor);
 
+        //遇到错误结束
         if (breakFlg) {
-            success = false;
+            success = UNITTEST_RESULT_FAILURE;
             break;
         }
     }
 
-    let unittest_result : any = {};
-    unittest_result[unittest_report_iterator] = iteratorId;
-    unittest_result[unittest_report_env] = env;
-    unittest_result[unittest_report_unittest] = unitTestId;
-    unittest_result[unittest_report_batch] = batch_uuid;
-    unittest_result[unittest_report_delFlg] = 0;
-    unittest_result[unittest_report_ctime] = Date.now();
-    unittest_result[unittest_report_result] = success;
-    unittest_result[unittest_report_failure_reason] = errorMessage;
-    unittest_result[unittest_report_cost_time] = Date.now() - btime;
-
-    await window.db[TABLE_UNITTEST_EXECUTOR_REPORT_NAME].put(unittest_result);
-
-    return batch_uuid;
+    return {
+        success,
+        recentStepUuid,
+        errorMessage,
+        etime: Date.now(),
+        btime,
+    };
 }
 
 

@@ -3,12 +3,12 @@ import { connect } from 'react-redux';
 import { cloneDeep } from 'lodash';
 import { DeleteOutlined } from '@ant-design/icons';
 import { 
-    Input, Flex, AutoComplete, Button,
+    Input, Flex, AutoComplete, Button, Select
 } from "antd";
 
-import { isStringEmpty, removeWithoutGap } from "../../util";
+import { getType, isStringEmpty, removeWithoutGap } from "../../util";
 
-import { CONTENT_TYPE_JSON } from '../../../config/global_config';
+import { CONTENT_TYPE_JSON, CONTENT_TYPE_FORMDATA, INPUTTYPE_TEXT, INPUTTYPE_FILE } from '../../../config/global_config';
 import { isJsonString, prettyJson } from '../../util/json';
 
 const { TextArea } = Input;
@@ -29,6 +29,18 @@ class RequestSendBody extends Component {
             }
         } else {
             let list = props.obj;
+            for (let _item of list) {
+                if (_item.type === INPUTTYPE_FILE) {
+
+                    const blob = new Blob([props.file[_item.key].blob], { type: props.file[_item.key].type });  
+  
+                    // 使用Blob对象和文件名来创建一个File对象  
+                    const file = new File([blob], props.file[_item.key].name, {  
+                        type: props.file[_item.key].type,
+                    });
+                    _item.value = file;
+                }
+            }
             this.state = {
                 rows: list.length,
                 data: list,
@@ -38,8 +50,9 @@ class RequestSendBody extends Component {
 
     setKey = (value, i) => {
         if(!isStringEmpty(value) && i === this.state.rows) {
-            let row = {};
+            let row : any = {};
             row.key = value;
+            row.type = INPUTTYPE_TEXT;
             this.state.data.push(row);
             this.setState({rows : this.state.rows + 1});
             this.props.cb(this.state.data);
@@ -59,9 +72,26 @@ class RequestSendBody extends Component {
         this.setState({ data });
     }
 
+    setFile = (file, i) => {
+        let value = file;
+        if(i === this.state.rows) {
+            let row : any = {};
+            row.value = value;
+            row.type = INPUTTYPE_FILE;
+            this.setState({rows : this.state.rows + 1});
+            this.props.cb(this.state.data);
+        } else {
+            let row = this.state.data[i];
+            row.value = value;
+            let data = cloneDeep(this.state.data);
+            this.setState({data});
+            this.props.cb(this.state.data);
+        }
+    }
+
     setValue = (value, i) => {
         if(!isStringEmpty(value) && i === this.state.rows) {
-            let row = {};
+            let row : any = {};
             row.value = value;
             this.state.data.push(row);
             this.setState({rows : this.state.rows + 1});
@@ -69,6 +99,21 @@ class RequestSendBody extends Component {
         } else {
             let row = this.state.data[i];
             row.value = value;
+            this.props.cb(this.state.data);
+        }
+    }
+
+    setType = (value, i) => {
+        if(i === this.state.rows) {
+            let row : any = {};
+            row.type = value;
+            this.state.data.push(row);
+            this.setState({rows : this.state.rows + 1});
+            this.props.cb(this.state.data);
+        } else {
+            let row = this.state.data[i];
+            row.type = value;
+            this.setState({data: this.state.data});
             this.props.cb(this.state.data);
         }
     }
@@ -147,6 +192,8 @@ class RequestSendBody extends Component {
                             onChange={event => this.setKey(event.target.value, i)} />
                     </Flex>
                     <Flex flex={1}>
+                    {
+                        ((i<this.state.rows ? this.state.data[i].type : INPUTTYPE_TEXT) === INPUTTYPE_TEXT || this.props.contentType !== CONTENT_TYPE_FORMDATA) ?
                         <AutoComplete
                             allowClear
                             style={{width: "100%"}}
@@ -160,6 +207,35 @@ class RequestSendBody extends Component {
                             }
                         >
                         </AutoComplete>
+                        :
+                        <>
+                            <Button style={{width: "100%"}}>{
+                                (i<this.state.rows && (this.state.data[i].value !== undefined) && ('name' in this.state.data[i].value)) 
+                                ? this.state.data[i].value.name : "未选择任何文件"}</Button>
+                            <Input 
+                                type='file' 
+                                onChange={event => this.setFile(event.target.files[0], i)} 
+                                style={{  
+                                    position: 'absolute',
+                                    opacity: 0,  
+                                    cursor: 'pointer',
+                                    width: 349,
+                                    height: 32,
+                                }}  
+                            />
+                        </>
+                    }
+                    {this.props.contentType === CONTENT_TYPE_FORMDATA ? 
+                        <Select 
+                            value={
+                                (i<this.state.rows ? this.state.data[i].type : INPUTTYPE_TEXT)
+                            }
+                            onChange={value => this.setType(value, i)}
+                            style={{borderRadius: 0, width: 85}}>
+                            <Select.Option value={ INPUTTYPE_TEXT }>文本</Select.Option>
+                            <Select.Option value={ INPUTTYPE_FILE }>文件</Select.Option>
+                        </Select>
+                    : null}
                     </Flex>
                 </Flex>
                 ))}

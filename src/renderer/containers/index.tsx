@@ -7,16 +7,18 @@ import configureStore from '../stores/configureStore';
 import { 
     ENV_LIST_ROUTE, 
     PROJECT_LIST_ROUTE,
-    ENVVAR_LIST_ROUTE,
+    ENVVAR_PRJ_LIST_ROUTE,
     VERSION_ITERATOR_LIST_ROUTE,
     VERSION_ITERATOR_ADD_ROUTE,
     VERSION_ITERATOR_DETAIL_ROUTE,
     INTERNET_REQUEST,
     INTERNET_REQUEST_BY_HISTORY_ROUTE,
-    INTERNET_REQUEST_BY_API_ROUTE,
+    INTERNET_REQUEST_BY_ITERATOR_API_ROUTE,
+    INTERNET_REQUEST_BY_PRJ_API_ROUTE,
     HISTORY_REQUEST_TO_ITERATOR_ROUTE,
     REQUEST_TO_ITERATOR_ROUTE,
     REQUEST_ITERATOR_DETAIL_ROUTE,
+    REQUEST_PROJECT_DETAIL_ROUTE,
     REQUEST_ITERATOR_LIST_ROUTE,
     REQUEST_HISTORY,
     VERSION_ITERATOR_DOC_ROUTE,
@@ -25,6 +27,7 @@ import {
     UNITTEST_ITERATOR_EXECUTOR_LIST_ROUTE,
     UNITTEST_STEP_ADD_ROUTE,
     UNITTEST_STEP_EDIT_ROUTE,
+    ITERATOR_ADD_REQUEST_ROUTE,
     WELCOME_ROUTE 
 } from '../../config/routers';
 import Nav from '../components/nav';
@@ -60,16 +63,18 @@ class MyRouter extends Component {
                                 <Switch>
                                     <Route path={ ENV_LIST_ROUTE } component={EnvListPage} />
                                     <Route path={ PROJECT_LIST_ROUTE } component={ProjectListPage} />
-                                    <Route path={ ENVVAR_LIST_ROUTE } component={EnvVarPage} />
+                                    <Route path={ ENVVAR_PRJ_LIST_ROUTE } component={EnvVarPage} />
                                     <Route path={ VERSION_ITERATOR_LIST_ROUTE } component={VersionIteratorPage} />
                                     <Route path={ VERSION_ITERATOR_ADD_ROUTE } component={VersionIteratorAddPage}/>
                                     <Route path={ VERSION_ITERATOR_DETAIL_ROUTE } component={VersionIteratorAddPage}/>
                                     <Route path={ INTERNET_REQUEST } component={NetSendPage} />
                                     <Route path={ INTERNET_REQUEST_BY_HISTORY_ROUTE } component={NetSendPage} />
-                                    <Route path={ INTERNET_REQUEST_BY_API_ROUTE } component={NetSendPage} />
+                                    <Route path={ INTERNET_REQUEST_BY_ITERATOR_API_ROUTE } component={NetSendPage} />
+                                    <Route path={ INTERNET_REQUEST_BY_PRJ_API_ROUTE } component={NetSendPage} />
                                     <Route path={ REQUEST_HISTORY } component={RequestHistoryPage} />
                                     <Route path={ REQUEST_TO_ITERATOR_ROUTE } component={RequestToSaveContainerPage} />
                                     <Route path={ REQUEST_ITERATOR_DETAIL_ROUTE } component={RequestSaveDetailContainerPage} />
+                                    <Route path={ REQUEST_PROJECT_DETAIL_ROUTE } component={RequestSaveDetailContainerPage} />
                                     <Route path={ REQUEST_ITERATOR_LIST_ROUTE } component={VersionIteratorRequestListPage} />
                                     <Route path={ VERSION_ITERATOR_DOC_ROUTE } component={VersionIteratorDocPage} />
                                     <Route path={ REQUEST_PROJECT_LIST_ROUTE } component={ProjectRequestListPage} />
@@ -78,6 +83,7 @@ class MyRouter extends Component {
                                     <Route path={ UNITTEST_ITERATOR_EXECUTOR_LIST_ROUTE } component={UnittestExecutorListPage} />
                                     <Route path={ UNITTEST_STEP_ADD_ROUTE } component={UnittestStepPage} />
                                     <Route path={ UNITTEST_STEP_EDIT_ROUTE } component={UnittestStepPage} />
+                                    <Route path={ ITERATOR_ADD_REQUEST_ROUTE } component={RequestToSaveContainerPage} />
                                     <Route path={ WELCOME_ROUTE } component={HomePage} />
                                 </Switch>
                             </Layout>

@@ -82,15 +82,7 @@ export async function addProjectRequest(project : string, method : string, uri :
         projectRequest[project_request_cuid] = device.uuid;
         projectRequest[project_request_cuname] = device.uname;    
         await window.db[TABLE_PROJECT_REQUEST_NAME].put(projectRequest);
-    } else if (
-        (existedProjectRequest[project_request_header_hash] != headerHash)
-        ||
-        (existedProjectRequest[project_request_param_hash] != paramHash)
-        ||
-        (existedProjectRequest[project_request_body_hash] != bodyHash)
-        ||
-        (existedProjectRequest[project_request_response_hash] != responseHash)
-    ) {
+    } else {
         //存在判断是否需要更新
         existedProjectRequest[project_request_header] = header;
         existedProjectRequest[project_request_header_hash] = headerHash;

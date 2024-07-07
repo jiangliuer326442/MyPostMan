@@ -12,6 +12,7 @@ let json_fragement_remark = TABLE_JSON_FRAGEMENT_FIELDS.FIELD_REMARK;
 export const TABLE_FIELD_NAME = "$$name$$";
 export const TABLE_FIELD_REMARK = "$$remark$$";
 export const TABLE_FIELD_TYPE = "$$type$$";
+export const TABLE_FIELD_NECESSARY = "$$necessary$$";
 export const TABLE_FIELD_VALUE = "$$value$$";
 
 export const TABLE_FIELD_TYPE_REF = "Ref";
@@ -48,13 +49,26 @@ export function shortJsonContent(shortJsonObject : any, jsonObject : any){
                 jsonObject[_key] = jsonObject[_key].toString();
             }
             //不对 content-type 的字符串进行缩减
-            if (_key === CONTENT_TYPE || jsonObject[_key].length <= 20) {
+            if (_key === CONTENT_TYPE || jsonObject[_key].length <= 50) {
                 shortJsonObject[_key] = jsonObject[_key];
             } else {
-                shortJsonObject[_key] = jsonObject[_key].substring(0, 20) + "...";
+                shortJsonObject[_key] = jsonObject[_key].substring(0, 50) + "...";
             }
         }
     }
+}
+
+export function retParseBodyJsonToTable(bodyObject : any, fileObject : any) {
+    let formRequestBodyData : any = {};
+    parseJsonToTable(formRequestBodyData, bodyObject);
+    for (let _key in fileObject) {
+        let _item : any = {};
+        _item[TABLE_FIELD_REMARK] = "";
+        _item[TABLE_FIELD_TYPE] = "File";
+        _item[TABLE_FIELD_VALUE] = fileObject[_key];
+        formRequestBodyData[_key] = _item;
+    }
+    return formRequestBodyData;
 }
 
 export function parseJsonToTable(parseResult : any, jsonObject : any) {
@@ -82,7 +96,7 @@ export function parseJsonToTable(parseResult : any, jsonObject : any) {
 }
 
 export function isInnerKey(key : string) {
-    return key === TABLE_FIELD_REMARK || key === TABLE_FIELD_TYPE || key === TABLE_FIELD_VALUE;
+    return key === TABLE_FIELD_REMARK || key === TABLE_FIELD_TYPE || key === TABLE_FIELD_VALUE || key === TABLE_FIELD_NECESSARY;
 }
 
 export function cleanJson(inJsonObject : any) {
@@ -93,24 +107,33 @@ export function cleanJson(inJsonObject : any) {
 }
 
 export function parseJsonToFilledTable(parseResult : any, jsonObject : any, filledObject : any) {
+    if (!filledObject) {
+        filledObject = null;
+    }
     for(let _key in jsonObject) {
         let type = getType(jsonObject[_key]);
+        if (filledObject && filledObject[_key] && filledObject[_key][TABLE_FIELD_TYPE]) {
+            type = filledObject[_key][TABLE_FIELD_TYPE];
+        }
         if (type === "Object") {
             parseResult[_key] = {};
             parseResult[_key][TABLE_FIELD_REMARK] = "";
             parseResult[_key][TABLE_FIELD_TYPE] = type;
-            parseJsonToFilledTable(parseResult[_key], jsonObject[_key], filledObject[_key]);
+            parseResult[_key][TABLE_FIELD_NECESSARY] = 0;
+            parseJsonToFilledTable(parseResult[_key], jsonObject[_key], (filledObject && filledObject[_key]) ? filledObject[_key] : null);
         } else if (type === "Array" && jsonObject[_key].length > 0) {
             parseResult[_key] = {};
             parseResult[_key][TABLE_FIELD_REMARK] = "";
             parseResult[_key][TABLE_FIELD_TYPE] = type;
+            parseResult[_key][TABLE_FIELD_NECESSARY] = 0;
             if (getType(jsonObject[_key][0]) === "Object") {
-                parseJsonToFilledTable(parseResult[_key], jsonObject[_key][0], filledObject[_key]);
+                parseJsonToFilledTable(parseResult[_key], jsonObject[_key][0], (filledObject && filledObject[_key]) ? filledObject[_key] : null);
             }
         } else {
             parseResult[_key] = {};
-            parseResult[_key][TABLE_FIELD_REMARK] = (filledObject.hasOwnProperty(_key) && filledObject[_key].hasOwnProperty(TABLE_FIELD_REMARK)) ? filledObject[_key][TABLE_FIELD_REMARK] : "";
+            parseResult[_key][TABLE_FIELD_REMARK] = (filledObject && filledObject.hasOwnProperty(_key) && filledObject[_key].hasOwnProperty(TABLE_FIELD_REMARK)) ? filledObject[_key][TABLE_FIELD_REMARK] : "";
             parseResult[_key][TABLE_FIELD_TYPE] = type;
+            parseResult[_key][TABLE_FIELD_NECESSARY] = (filledObject && filledObject.hasOwnProperty(_key) && filledObject[_key].hasOwnProperty(TABLE_FIELD_NECESSARY)) ? filledObject[_key][TABLE_FIELD_NECESSARY] : 1;
             parseResult[_key][TABLE_FIELD_VALUE] = jsonObject[_key];
         }
     }
@@ -121,6 +144,10 @@ export async function parseJsonToChildren(parentKeys, parentKey, result, content
     for(let key in content) {
         if(isInnerKey(key)) {
             continue;
+        }
+        let necessary = 1;
+        if(getType(content[key][TABLE_FIELD_NECESSARY]) !== "Undefined") {
+            necessary = content[key][TABLE_FIELD_NECESSARY];
         }
         let remark = "";
         if(getType(content[key][TABLE_FIELD_REMARK]) !== "Undefined") {
@@ -145,6 +172,7 @@ export async function parseJsonToChildren(parentKeys, parentKey, result, content
         obj["key"] = parentKeys.join(".") + (parentKey === "" ? "" : ".") + key;
         obj[TABLE_FIELD_NAME] = key;
         obj[TABLE_FIELD_TYPE] = type;
+        obj[TABLE_FIELD_NECESSARY] = necessary;
         obj[TABLE_FIELD_REMARK] = remark;
         obj[TABLE_FIELD_VALUE] = getType(content[key][TABLE_FIELD_VALUE]) === "Undefined" ? null : content[key][TABLE_FIELD_VALUE];
         if (type === "Object" || type === "Array") {
@@ -193,6 +221,18 @@ export function iteratorGenHash(originObject : Object) : string {
     let shortObject = {};
     shortJsonContent(shortObject, originObject);
     let genHash = innerIteratorGenHash("", shortObject);
+    console.debug(genHash);
+    genHash = md5(genHash);
+    return genHash;
+}
+
+export function iteratorBodyGenHash(bodyObject : Object, fileObject : Object) : string {
+    let shortBodyObject = {};
+    shortJsonContent(shortBodyObject, bodyObject);
+    let genHash = innerIteratorGenHash("", shortBodyObject);
+    for (let _key in fileObject) {
+        genHash += _key;
+    }
     genHash = md5(genHash);
     return genHash;
 }
@@ -227,6 +267,7 @@ function innerCleanJson(outJsonObject : any, inJsonObject : any) {
             } else {
                 delete _currentObject[TABLE_FIELD_REMARK];
                 delete _currentObject[TABLE_FIELD_TYPE];
+                delete _currentObject[TABLE_FIELD_NECESSARY];
                 _currentObject = [_currentObject];
             }
             outJsonObject[_key] = _currentObject;
@@ -249,6 +290,7 @@ function innerCleanJson(outJsonObject : any, inJsonObject : any) {
             } else {
                 delete _currentObject[TABLE_FIELD_REMARK];
                 delete _currentObject[TABLE_FIELD_TYPE];
+                delete _currentObject[TABLE_FIELD_NECESSARY];
             }
             outJsonObject[_key] = _currentObject;
             if (!delFlg) {

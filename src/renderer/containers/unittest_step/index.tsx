@@ -59,6 +59,7 @@ let unittest_step_prj = TABLE_UNITTEST_STEPS_FIELDS.FIELD_MICRO_SERVICE_LABEL;
 let unittest_step_method = TABLE_UNITTEST_STEPS_FIELDS.FIELD_REQUEST_METHOD;
 let unittest_step_uri = TABLE_UNITTEST_STEPS_FIELDS.FIELD_URI;
 let unittest_step_title = TABLE_UNITTEST_STEPS_FIELDS.FIELD_TITLE;
+let unittest_step_continue = TABLE_UNITTEST_STEPS_FIELDS.FIELD_CONTINUE;
 let unittest_step_sort = TABLE_UNITTEST_STEPS_FIELDS.FIELD_SORT;
 let unittest_step_request_param = TABLE_UNITTEST_STEPS_FIELDS.FIELD_REQUEST_PARAM;
 let unittest_step_request_head = TABLE_UNITTEST_STEPS_FIELDS.FIELD_REQUEST_HEADER;
@@ -89,6 +90,7 @@ class UnittestStepContainer extends Component {
         let assertOperator = [" == "];
         let assertAfter = [""];
         let sort = 0;
+        let continueEnable = "0";
         let requestParam = {};
         let requestHead = {};
         let requestBody = {};
@@ -114,6 +116,7 @@ class UnittestStepContainer extends Component {
                 uri = cUnitTestStep[unittest_step_uri];
                 title = cUnitTestStep[unittest_step_title];
                 sort = cUnitTestStep[unittest_step_sort];
+                continueEnable = cUnitTestStep[unittest_step_continue] ? cUnitTestStep[unittest_step_continue] : "1";
                 requestParam = cUnitTestStep[unittest_step_request_param];
                 requestHead = cUnitTestStep[unittest_step_request_head];
                 requestBody = cUnitTestStep[unittest_step_request_body];
@@ -143,6 +146,7 @@ class UnittestStepContainer extends Component {
             title,
             tips: [],
             response: {},
+            continueEnable,
             sort,
             paramTips: [],
             assertTitle,
@@ -414,7 +418,7 @@ class UnittestStepContainer extends Component {
                 this.state.title, this.state.prj, this.state.method, this.state.uri,
                 this.state.requestHead, this.state.requestParam, this.state.requestBody,
                 this.state.assertTitle, this.state.assertPrev, this.state.assertOperator, this.state.assertAfter,
-                this.state.sort,
+                this.state.sort, this.state.continueEnable,
                 this.props.device, ()=>{
                     this.props.history.goBack();
                 }
@@ -423,7 +427,7 @@ class UnittestStepContainer extends Component {
             editUnitTestStep(this.state.unitTestStepUuid, this.state.title,
                 this.state.requestHead, this.state.requestParam, this.state.requestBody,
                 this.state.assertTitle, this.state.assertPrev, this.state.assertOperator, this.state.assertAfter,
-                this.state.assertUuidArr, this.state.sort, this.props.device, ()=>{
+                this.state.assertUuidArr, this.state.sort, this.state.continueEnable, this.props.device, ()=>{
                     this.props.history.goBack();
                 }
             );
@@ -476,6 +480,19 @@ class UnittestStepContainer extends Component {
                                 label="步骤名称"
                             >
                                 <Input value={this.state.title} onChange={event=>this.setState({title: event.target.value})} />
+                            </Form.Item>
+
+                            <Form.Item
+                                label="触发方式"
+                            >
+                                <Select
+                                    value={this.state.continueEnable}
+                                    style={{ width: 174 }}
+                                    onChange={ value => this.setState({continueEnable: value}) }
+                                >
+                                    <Select.Option value="1">自动执行</Select.Option>
+                                    <Select.Option value="0">手动执行</Select.Option>
+                                </Select>
                             </Form.Item>
                             <Form.Item
                                 label="步骤排序"

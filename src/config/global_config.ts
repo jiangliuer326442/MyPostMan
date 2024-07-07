@@ -1,3 +1,7 @@
+export type ChannelsReadFile = 'pipeline_read_filepath';
+
+export const ChannelsReadFileStr = 'pipeline_read_filepath';
+
 export type ChannelsUserInfo = 'pipeline_init_userinfo';
 
 export const ChannelsUserInfoStr = 'pipeline_init_userinfo';
@@ -100,6 +104,10 @@ export const CONTENT_TYPE_URLENCODE = "application/x-www-form-urlencoded";
 export const CONTENT_TYPE_FORMDATA = "multipart/form-data";
 
 export const CONTENT_TYPE_JSON = "application/json";
+
+export const INPUTTYPE_TEXT = "text";
+
+export const INPUTTYPE_FILE = "file";
 
 export const GLobalPort = 4343;
 

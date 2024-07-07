@@ -116,7 +116,7 @@ class RequestHistoryContainer extends Component {
                 width: 240,
                 render: (_, record) => { 
                     return <Tooltip title={record[uri]} placement='right'>
-                        { record[method] + "\n" + (record[uri].length > 25 ? "..." + record[uri].substring(record[uri].length - 25, record[uri].length) : record[uri]) }
+                        { record[method] + "\n" + (record[uri].length > 50 ? "..." + record[uri].substring(record[uri].length - 50, record[uri].length) : record[uri]) }
                     </Tooltip>
                 },
             },

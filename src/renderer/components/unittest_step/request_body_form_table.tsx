@@ -1,6 +1,6 @@
 import { Component, ReactNode } from 'react';
 import { connect } from 'react-redux';
-import { Table } from "antd";
+import { Table, Button, Input } from "antd";
 
 import StepExpressionBuilderBox from "./step_expression_builder_box";
 import {
@@ -10,7 +10,7 @@ import {
     TABLE_FIELD_REMARK,
     parseJsonToChildren,
 } from '../../util/json';
-import { getType } from '../../util';
+import { cloneDeep } from 'lodash';
 
 class RequestBodyFormTable extends Component {
 
@@ -44,10 +44,24 @@ class RequestBodyFormTable extends Component {
                     render: (data, row) => {
                         let key = row[TABLE_FIELD_NAME];
                         let type = row[TABLE_FIELD_TYPE];
-                        console.debug(row);
-                        console.debug(type);
                         if (type === "Object" || type === "Array") {
                             return null;
+                        } else if (type === "File") {
+                            return (<>
+                                <Button style={{width: 291}}>{(data != null && 'name' in data) ? data.name : "未选择任何文件"}</Button>
+                                <Input 
+                                    type='file' 
+                                    onChange={event => this.setFile(key, event.target.files[0])} 
+                                    style={{  
+                                        position: 'absolute',
+                                        opacity: 0,  
+                                        cursor: 'pointer',
+                                        width: 291,
+                                        height: 32,
+                                        top: 17,
+                                    }}  
+                                />
+                            </>);
                         } else {
                             return (
                                 <StepExpressionBuilderBox
@@ -79,6 +93,23 @@ class RequestBodyFormTable extends Component {
         let parseJsonToChildrenResult : Array<any> = [];
         await parseJsonToChildren([], "", parseJsonToChildrenResult, this.state.object, async (_1, _2) => undefined);
         this.setState({ datas : parseJsonToChildrenResult })
+    }
+
+    setFile = (key, file) => {
+        let item : any = {};
+        item.name = file.name;
+        item.path = file.path;
+        item.type = file.type;
+
+        let data = cloneDeep(this.state.datas);
+        for (let _item of data) {
+            if (_item.key === key) {
+                _item[TABLE_FIELD_VALUE] = item;
+            }
+        }
+        this.setState({datas: data});
+        this.state.returnObject[key] = item;
+        this.props.cb(this.state.returnObject);
     }
 
     setData = (key, value) => {

@@ -117,7 +117,7 @@ class AddEnvVarComponent extends Component {
                         <AutoComplete
                             allowClear
                             onSearch={ this.handleSearchEnvKey }
-                            options={this.state.tips.length > 0 ? this.state.tips : this.props.tips}
+                            options={(this.state.tips.length > 0 || !isStringEmpty(this.state.pname)) ? this.state.tips : this.props.tips}
                             disabled={ this.state.actionType === "edit" }
                             placeholder="参数名称"
                             value={this.state.pname}

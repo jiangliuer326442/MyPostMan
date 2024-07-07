@@ -34,3 +34,12 @@ export const UNITTEST_FUNCTION_ARRAY_FIRST = "*first()"
 
 //随机取一个元素
 export const UNITTEST_FUNCTION_ARRAY_RANDOM = "*random()"
+
+// 执行成功
+export const UNITTEST_RESULT_SUCCESS = "success";
+
+// 执行失败
+export const UNITTEST_RESULT_FAILURE = "failure";
+
+// 执行结果未知
+export const UNITTEST_RESULT_UNKNOWN = "unknown";

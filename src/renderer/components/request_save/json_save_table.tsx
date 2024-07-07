@@ -1,11 +1,12 @@
 import { Component, ReactNode } from 'react';
 import { connect } from 'react-redux';
 import { cloneDeep } from 'lodash';
-import { Table, Input } from "antd";
+import { Table, Input, Checkbox } from "antd";
 
 import {
     TABLE_FIELD_NAME,
     TABLE_FIELD_TYPE,
+    TABLE_FIELD_NECESSARY,
     TABLE_FIELD_VALUE,
     TABLE_FIELD_REMARK,
     parseJsonToChildren,
@@ -32,6 +33,14 @@ class JsonSaveTableContainer extends Component {
                     dataIndex: TABLE_FIELD_TYPE,
                 },
                 {
+                    title: '必填',
+                    dataIndex: TABLE_FIELD_NECESSARY,
+                    render: (necessary : number|undefined, row : any) => {
+                        let key = row.key;
+                        return <Checkbox checked={necessary == 1} onChange={event=> this.handleSetNecessary(key, event.target.checked) }></Checkbox>;
+                    }
+                },
+                {
                     title: '备注',
                     dataIndex: TABLE_FIELD_REMARK,
                     render: (remark : any, row : any) => {
@@ -54,10 +63,17 @@ class JsonSaveTableContainer extends Component {
                     render: (demoRaw : any, row : any) => {
                         let key = row.key;
                         let demo = cloneDeep(demoRaw);
-                        if(key !== CONTENT_TYPE && demo != null && demo.length > 20) {
-                            return demo.substring(0, 20) + "...";
+                        if (row[TABLE_FIELD_TYPE] === "File") {
+                            if(demo.name != null && demo.name.length > 50) {
+                                return demo.name.substring(0, 50) + "...";
+                            }
+                            return demo.name;
+                        } else {
+                            if(key !== CONTENT_TYPE && demo != null && demo.length > 50) {
+                                return demo.substring(0, 50) + "...";
+                            }
+                            return demo;
                         }
-                        return demo;
                     }
                 },
             ],
@@ -66,6 +82,10 @@ class JsonSaveTableContainer extends Component {
     }
 
     async componentDidMount() {
+        this.parseJsonToChildren();
+    }
+
+    parseJsonToChildren = async () => {
         let parseJsonToChildrenResult : Array<any> = [];
         await parseJsonToChildren([], "", parseJsonToChildrenResult, this.state.object, async (parentKey, content) => {
             if (this.props.readOnly) return undefined;
@@ -74,6 +94,18 @@ class JsonSaveTableContainer extends Component {
             return json_fragement;
         });
         this.setState({ datas : parseJsonToChildrenResult })
+    }
+
+    handleSetNecessary = (key, checked) => {
+        let obj = this.state.object;
+        if (checked) {
+            obj[key][TABLE_FIELD_NECESSARY] = 1;
+        } else {
+            obj[key][TABLE_FIELD_NECESSARY] = 0;
+        }
+        this.props.cb(this.state.object);
+
+        this.parseJsonToChildren();
     }
 
     handleSetRemark = (key, value) => {

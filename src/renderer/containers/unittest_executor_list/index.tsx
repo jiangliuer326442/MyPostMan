@@ -40,10 +40,12 @@ class UnittestExecutorList extends Component {
                     title: '执行结果',
                     dataIndex: unittest_report_result,
                     render: (result) => {
-                        if (result) {
+                        if (result === "success") {
                             return <span style={{color:"green"}}>成功</span>;
-                        } else {
+                        } else if (result === "failure") {
                             return <span style={{color:"red"}}>失败</span>;
+                        } else {
+                            return <span style={{color:"yellow"}}>未知</span>;
                         }
                     }
                 },
@@ -52,7 +54,7 @@ class UnittestExecutorList extends Component {
                     dataIndex: unittest_report_cost_time,
                     render: (cost_time, record) => {
                         let result = record[unittest_report_result];
-                        if (result) {
+                        if (result === "success") {
                             return cost_time + "毫秒";
                         } else {
                             return "--";

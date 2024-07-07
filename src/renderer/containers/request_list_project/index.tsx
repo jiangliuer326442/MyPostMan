@@ -62,8 +62,8 @@ class RequestListProject extends Component {
                     title: '接口地址',
                     dataIndex: project_request_uri,
                     render: (uri) => { 
-                        if (uri.length > 25) {
-                            return <Tooltip title={ uri } placement='right'>{ "..." + uri.substring(uri.length - 25, uri.length) }</Tooltip>;
+                        if (uri.length > 50) {
+                            return <Tooltip title={ uri } placement='right'>{ "..." + uri.substring(uri.length - 50, uri.length) }</Tooltip>;
                         } else {
                             return uri;
                         }
@@ -91,8 +91,7 @@ class RequestListProject extends Component {
                     title: '操作',
                     key: 'operater',
                     render: (_, record) => {
-                        let urlStr = encode("$$" + record[project_request_prj] + "$$" + record[project_request_method] + "$$" + record[project_request_uri]);
-                        let url = "#/version_iterator_request/" + urlStr;
+                        let url = "#/version_iterator_request/" + record[project_request_prj] + "/" + record[project_request_method] + "/" + encode(record[project_request_uri]);
                         return (
                             <Space size="middle">
                                 <Button type="link" icon={<EyeOutlined />} href={ url } />

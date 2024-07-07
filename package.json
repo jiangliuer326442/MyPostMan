@@ -1,6 +1,6 @@
 {
   "name": "MyPostManDebug",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "是一款类似 PostMan 的接口请求软件",
   "keywords": [
     "postman",
@@ -43,7 +43,8 @@
     "start:main": "cross-env NODE_ENV=development electronmon -r ts-node/register/transpile-only .",
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
-    "test": "jest"
+    "test": "jest",
+    "build-icon": "electron-icon-builder --input=./assets/icon.png --output=assets --flatten"
   },
   "browserslist": [],
   "prettier": {
@@ -166,6 +167,7 @@
     "electron": "^26.2.4",
     "electron-builder": "^24.6.4",
     "electron-devtools-installer": "^3.2.0",
+    "electron-icon-builder": "^2.0.1",
     "electronmon": "^2.0.2",
     "eslint": "^8.49.0",
     "eslint-config-airbnb-base": "^15.0.0",
