@@ -30,6 +30,8 @@ export const REQUEST_ITERATOR_DETAIL_ROUTE = "/version_iterator_request/:iterato
 export const REQUEST_PROJECT_DETAIL_ROUTE = "/version_iterator_request/:prj/:method/:uri"
 //迭代单测列表
 export const UNITTEST_ITERATOR_LIST_ROUTE = "/version_iterator_tests/:id"
+//会员功能
+export const VIP_ITERATOR_LIST_ROUTE = "/version_iterator_vip/:id"
 //迭代单测执行列表
 export const UNITTEST_ITERATOR_EXECUTOR_LIST_ROUTE = "/unittest_executor_record/:env/:iteratorId/:unitTestId"
 //迭代单测步骤新增

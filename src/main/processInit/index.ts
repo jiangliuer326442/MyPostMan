@@ -6,6 +6,8 @@ import MarkdownInitFunc from './markdown';
 import PostManInitFunc from './postman';
 import UpdaterInitFunc from './updater';
 import ProductInitFunc from './product';
+import VipInitFunc from './vip';
+import MockServerInitFunc from './mockserver';
 
 export default function (mainWindow : BrowserWindow){
     FileReadInitFunc(mainWindow);
@@ -15,4 +17,6 @@ export default function (mainWindow : BrowserWindow){
     PostManInitFunc();
     UpdaterInitFunc();
     ProductInitFunc();
+    VipInitFunc();
+    MockServerInitFunc(mainWindow);
 }

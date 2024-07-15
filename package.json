@@ -1,6 +1,6 @@
 {
   "name": "MyPostManDebug",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "是一款类似 PostMan 的接口请求软件",
   "keywords": [
     "postman",
@@ -116,6 +116,7 @@
     "lodash": "^4.17.21",
     "markdown-navbar": "^1.4.3",
     "prismjs": "^1.29.0",
+    "qrcode": "^1.5.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-json-view": "^1.21.3",
@@ -145,6 +146,7 @@
     "@types/lodash": "^4.17.4",
     "@types/markdown-navbar": "^1.4.4",
     "@types/node": "20.6.2",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
     "@types/react-router-dom": "^5.3.3",

@@ -3,6 +3,11 @@ import { BrowserWindow, ipcMain, app, dialog } from 'electron';
 import fs from 'fs-extra';
 import * as Showdown from 'showdown';
 
+import {
+    setAccess,
+    getAccess
+} from '../../store/config/doc';
+import { isVip } from '../../store/config/vip';
 import { 
     TABLE_VERSION_ITERATION_FIELDS, 
     TABLE_VERSION_ITERATION_REQUEST_FIELDS,
@@ -14,7 +19,10 @@ import {
     ChannelsMarkdownQueryStr,
     ChannelsMarkdownQueryResultStr,
     ChannelsMarkdownSaveMarkdownStr, 
+    ChannelsMarkdownAccessSetStr,
+    ChannelsMarkdownAccessGetStr,
     ChannelsMarkdownSaveHtmlStr,
+    ChannelsMarkdownAccessSetResultStr,
 } from '../../../config/global_config';
 
 import { isStringEmpty, getType } from '../../../renderer/util';
@@ -25,6 +33,8 @@ import {
 
 let version_iterator_uuid = TABLE_VERSION_ITERATION_FIELDS.FIELD_UUID;
 let version_iterator_title = TABLE_VERSION_ITERATION_FIELDS.FIELD_NAME;
+let version_iterator_open = TABLE_VERSION_ITERATION_FIELDS.FIELD_OPENFLG;
+let version_iterator_del = TABLE_VERSION_ITERATION_FIELDS.FIELD_DELFLG;
 let version_iterator_content = TABLE_VERSION_ITERATION_FIELDS.FIELD_CONTENT;
 
 let prj_label = TABLE_MICRO_SERVICE_FIELDS.FIELD_LABEL;
@@ -100,10 +110,55 @@ export default function (mainWindow : BrowserWindow){
 
     window = mainWindow;
 
+    //设置文档可见性
+    ipcMain.on(ChannelsMarkdownStr, (event, action : string,  iteratorId : string, visibility : boolean) => {
+        if (action !== ChannelsMarkdownAccessSetStr) return;
+        setAccess(iteratorId, visibility);
+        event.reply(ChannelsMarkdownStr, ChannelsMarkdownAccessSetResultStr, iteratorId, visibility);
+    });
+
+    //获取文档可见性
+    ipcMain.on(ChannelsMarkdownStr, (event, action : string,  iteratorId : string) => {
+        if (action !== ChannelsMarkdownAccessGetStr) return;
+        let access = getAccess(iteratorId);
+        event.reply(ChannelsMarkdownStr, ChannelsMarkdownAccessSetResultStr, iteratorId, access);
+    });
+
+    //查询文档内容
     ipcMain.on(ChannelsMarkdownStr, (event, action, versionIteration, version_iteration_requests, prjs) => {
         if (action !== ChannelsMarkdownQueryResultStr) return;
+        //迭代已经关闭，没有权限
+        if (versionIteration === undefined || versionIteration[version_iterator_del] === 1 || versionIteration[version_iterator_open] === 0) {
+            const data = {
+                code: 404,
+                message: '该迭代已关闭',
+            };
+            res.json(data);
+            return;
+        }
+
+        //不是会员，迭代文档停止共享
+        if (!isVip()) {
+            const data = {
+                code: 403,
+                message: '对方没有开通会员，已停止迭代文档的共享',
+            };
+            res.json(data);
+            return;
+        }
+
         let iterationUUID = versionIteration[version_iterator_uuid];
         if (iterationUUID === iteratorId) {
+            let access = getAccess(iterationUUID);
+            if (!access) {
+                const data = {
+                    code: 403,
+                    message: '该迭代已停止共享',
+                };
+                res.json(data);
+                return;
+            }
+
             let iteratorTitle = versionIteration[version_iterator_title];
             let markdownContent = getMarkDownContent(versionIteration, version_iteration_requests, prjs);
             const data = {
@@ -115,6 +170,13 @@ export default function (mainWindow : BrowserWindow){
                 }
             };
             res.json(data);
+        } else {
+            const data = {
+                code: 500,
+                message: '服务器错误',
+            };
+            res.json(data);
+            return;
         }
     });
 

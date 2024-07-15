@@ -139,6 +139,10 @@ export default function (state = {
             {
               key: ITERATOR + "_" + versionIterator[version_iterator_uuid] + "_unittest",
               label: <a href={"#/version_iterator_tests/" + versionIterator[version_iterator_uuid] } rel="noopener noreferrer">单测</a >
+            },
+            {
+              key: ITERATOR + "_" + versionIterator[version_iterator_uuid] + "_vip",
+              label: <a href={"#/version_iterator_vip/" + versionIterator[version_iterator_uuid] } rel="noopener noreferrer">会员</a >
             }
           ],
         });

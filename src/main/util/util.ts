@@ -30,7 +30,6 @@ export function resolveHtmlPath(htmlFileName: string) {
   } else {
     url.pathname = htmlFileName;
   }
-  log.debug("resolveHtmlPath:", url.href);
   return url.href;
 }
 

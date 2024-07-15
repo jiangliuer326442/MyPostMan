@@ -11,6 +11,9 @@ import {
     ChannelsUserInfoSetUserinfoStr,
     ChannelsUserInfoSetAppinfoStr,
     ChannelsUserInfoStr,
+    ChannelsMockServerStr,
+    ChannelsMockServerQueryStr,
+    ChannelsMockServerQueryResultStr,
 } from '../../config/global_config';
 
 import { getPrjs } from '../actions/project';
@@ -67,14 +70,24 @@ export default function(dispatch, cb) : void {
             window.electron.ipcRenderer.sendMessage(ChannelsMarkdownStr, ChannelsMarkdownQueryResultStr, versionIteration, requests, prjs);
         });
 
+        //刷迭代接口
+        window.electron.ipcRenderer.on(ChannelsMockServerStr, async (action, iteratorId, projectId, method, uri) => {
+            if (action !== ChannelsMockServerQueryStr) return;
+            let versionIteration = await getVersionIterator(iteratorId);
+            let requests = await getVersionIteratorRequestsByProject(iteratorId, projectId, null, "", uri);
+            window.electron.ipcRenderer.sendMessage(ChannelsMockServerStr, ChannelsMockServerQueryResultStr, versionIteration, requests);
+        });
+
         //设置用户信息
-        window.electron.ipcRenderer.on(ChannelsUserInfoStr, (action, uuid, uname, rtime) => {
+        window.electron.ipcRenderer.on(ChannelsUserInfoStr, (action, uuid, uname, rtime, vipFlg, expireTime) => {
             if (action !== ChannelsUserInfoSetUserinfoStr) return;
             dispatch({
                 type: SET_DEVICE_INFO,
                 uuid,
                 uname,
                 rtime,
+                vipFlg, 
+                expireTime
             });
         });
 

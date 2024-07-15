@@ -1,7 +1,7 @@
 import { Component, ReactNode } from 'react';
 import { connect } from 'react-redux';
 import axios from 'axios';
-import { Breadcrumb, Layout, FloatButton } from "antd";
+import { Breadcrumb, Layout, FloatButton, Result } from "antd";
 import { FileMarkdownOutlined, Html5Outlined, ExportOutlined } from '@ant-design/icons';
 
 import { 
@@ -9,7 +9,6 @@ import {
     ChannelsMarkdownShowStr, 
     ChannelsMarkdownSaveMarkdownStr, 
     ChannelsMarkdownSaveHtmlStr,
-    CONTENT_TYPE,
     CONTENT_TYPE_URLENCODE,
 } from '../../../config/global_config';
 import MarkdownView from '../../components/markdown/show';
@@ -30,7 +29,9 @@ class IteratorDoc extends Component {
             md: "",
             versionIteration: "",
             requests: [],
-            prjs: []
+            prjs: [],
+            errorCode: 1000,
+            errorMessage: "",
         };
     }
 
@@ -46,8 +47,17 @@ class IteratorDoc extends Component {
                         "Content-Type": CONTENT_TYPE_URLENCODE,
                     }
                 }).then(response => {
-                    this.setState({md: response.data.data.markdown});
-                    document.title = response.data.data.title;
+                    if (response.data.code === 1000) {
+                        this.setState({
+                            md: response.data.data.markdown
+                        });
+                        document.title = response.data.data.title;
+                    } else {
+                        this.setState({
+                            errorCode: response.data.code,
+                            errorMessage: response.data.message,
+                        });
+                    }
                 });
             } catch (error) {
                 console.error(error);
@@ -78,18 +88,23 @@ class IteratorDoc extends Component {
         return (
             <Layout>
                 <Header style={{ padding: 0 }}>
-                    {'electron' in window ?
-                    <a href={ this.props.html.replace("localhost", this.props.ip) + "#/version_iterator_doc/" + this.state.iteratorId } target="_blank">迭代文档（点击用浏览器打开）</a >
-                    :
-                    "迭代文档"
-                    }
+                    迭代文档
                 </Header>
                 <Content style={{ margin: '0 16px' }}>
                     <Breadcrumb style={{ margin: '16px 0' }} items={[
                         { title: '迭代' }, 
                         { title: '文档' }
                     ]} />
+                    {this.state.errorCode === 1000 ? 
                     <MarkdownView showNav={ true } content={ this.state.md } show={ true } />
+                    : null}
+                    {(this.state.errorCode === 403 || this.state.errorCode === 404) ?
+                    <Result
+                        status={ this.state.errorCode }
+                        title={ this.state.errorCode }
+                        subTitle={this.state.errorMessage}
+                    />
+                    : null} 
                     {'electron' in window ? 
                     <FloatButton.Group
                         trigger="click"
@@ -126,8 +141,6 @@ class IteratorDoc extends Component {
 function mapStateToProps (state) {
     return {
         prjs: state.prj.list,
-        html: state.device.html,
-        ip: state.device.ip,
     }
 }
       

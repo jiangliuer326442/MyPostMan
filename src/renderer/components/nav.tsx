@@ -61,13 +61,15 @@ class Nav extends Component {
               height: "32px",
               margin: "16px",
             }}>
-              <h3 style={{lineHeight: 0,
+              <a href={ "#/" } rel="noopener noreferrer" style={{lineHeight: 0,
                 color: "#5DE2E7",
                 marginLeft: 5,
                 marginTop: 10,
                 fontSize: 25,
                 fontFamily: "serif"
-              }}>{this.props.appName}</h3>
+              }}>
+                {this.props.appName}
+              </a>
               <p style={{
                 color: "#fff",
                 marginTop: -30,

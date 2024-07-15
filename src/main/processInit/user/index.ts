@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs-extra';
 import { ChannelsUserInfoStr, ChannelsUserInfoPingStr, ChannelsUserInfoSetUserinfoStr } from '../../../config/global_config';
 import { registerUser, getUUID, getUName, getRTime } from '../../store/config/user';
+import { isVip, getExpireTime } from '../../store/config/vip';
 import { uuidPath, writeFile } from '../uuid';
 import { genUUID } from '../../util/util';
 
@@ -15,7 +16,10 @@ function notifyUserInfo() {
     let uuid = getUUID();
     let uname = getUName();
     let rtime = getRTime();
-    readayEvent.reply(ChannelsUserInfoStr, ChannelsUserInfoSetUserinfoStr, uuid, uname, rtime);
+    let vipFlg = isVip();
+    let expireTime = getExpireTime();
+
+    readayEvent.reply(ChannelsUserInfoStr, ChannelsUserInfoSetUserinfoStr, uuid, uname, rtime, vipFlg, expireTime);
     clearInterval(intervalId);
   }
 }

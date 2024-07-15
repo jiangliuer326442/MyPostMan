@@ -7,8 +7,9 @@ import {
   ChannelsAutoUpgradeCheckStr, 
   ChannelsAutoUpgradeNewVersionStr,
   ChannelsAutoUpgradeDownloadStr,
-  IS_AUTO_UPGRADE
+  IS_AUTO_UPGRADE,
 } from '../../config/global_config';
+import { getdayjs } from '../util';
 
 const { Header, Content, Footer } = Layout;
 
@@ -76,7 +77,11 @@ class Home extends Component {
     return (
       <Layout>
           <Header style={{ padding: 0 }}>
-            { this.props.uname } 你好，{this.props.appName} 感谢您的一路陪伴 
+            {this.props.vipFlg ? 
+            "尊敬的会员 " + this.props.uname + " 你好， " + this.props.appName + " 已陪你走过 " + Math.ceil((Date.now() - this.props.rtime)/(86400 * 1000)) + " 天（会员到期日 " + getdayjs(this.props.expireTime).format("YYYY-MM-DD") + " ）"
+            :
+            this.props.uname + " 你好，" + this.props.appName + " 已陪你走过 " + Math.ceil((Date.now() - this.props.rtime)/(86400 * 1000)) + " 天"
+            } 
           </Header>
           <Content style={{ margin: '0 16px' }}>
             <div
@@ -130,6 +135,9 @@ function mapStateToProps (state) {
   return {
     uname: state.device.uname,
     appName: state.device.appName,
+    rtime: state.device.rtime,
+    vipFlg: state.device.vipFlg,
+    expireTime: state.device.expireTime,
   }
 }
 

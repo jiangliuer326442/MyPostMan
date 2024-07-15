@@ -26,9 +26,29 @@ export const ChannelsMarkdownQueryStr = 'pipeline_markdown_query';
 
 export const ChannelsMarkdownQueryResultStr = 'pipeline_markdown_query_result';
 
+export const ChannelsMarkdownAccessSetStr = 'pipeline_markdown_set_accessable';
+
+export const ChannelsMarkdownAccessGetStr = 'pipeline_markdown_get_accessable';
+
+export const ChannelsMarkdownAccessSetResultStr = 'pipeline_markdown_result_accessable';
+
 export const ChannelsMarkdownSaveMarkdownStr = 'pipeline_markdown_save_markdown';
 
 export const ChannelsMarkdownSaveHtmlStr = 'pipeline_markdown_save_html';
+
+export type ChannelssMockServer = 'pipeline_mockserver';
+
+export const ChannelsMockServerStr = 'pipeline_mockserver';
+
+export const ChannelsMockServerQueryStr = 'pipeline_mockserver_query';
+
+export const ChannelsMockServerQueryResultStr = 'pipeline_mockserver_query_result';
+
+export const ChannelsMockServerAccessSetStr = 'pipeline_mockserver_set_accessable';
+
+export const ChannelsMockServerAccessGetStr = 'pipeline_mockserver_get_accessable';
+
+export const ChannelsMockServerAccessSetResultStr = 'pipeline_mockserver_result_accessable';
 
 export type ChannelsDb = 'pipeline_database';
 
@@ -63,6 +83,16 @@ export const ChannelsAutoUpgradeLatestStr = 'pipeline_autoupgrade_latest';
 
 export const ChannelsAutoUpgradeDownloadStr = 'pipeline_autoupgrade_download';
 
+export type ChannelsVip = 'pipeline_vip';
+
+export const ChannelsVipStr = 'pipeline_vip';
+
+export const ChannelsVipGenUrlStr = 'pipeline_postman_genurl';
+
+export const ChannelsVipCkCodeStr = 'pipeline_postman_ckcode';
+
+export const ChannelsVipDoCkCodeStr = 'pipeline_postman_dock';
+
 export const IS_AUTO_UPGRADE = "storage.checkAutoUpgrade";
 
 export const UUID = "device.uuid";
@@ -70,6 +100,10 @@ export const UUID = "device.uuid";
 export const UNAME = "device.uname";
 
 export const REG_TIME = "device.rtime";
+
+export const VIP_FLG = "device.vip.flg";
+
+export const EXPIRE_TIME = "device.expire.time";
 
 export const HTML = "app.html";
 
@@ -112,3 +146,11 @@ export const INPUTTYPE_FILE = "file";
 export const GLobalPort = 4343;
 
 export const DevHtmlPort = 1212;
+
+export const VipTagDoc = "vip.tag.doc";
+
+export const VipTagMockServer = "vip.tag.mock";
+
+export const PayJumpUrl = "http://pay.fanghailiang.cn:8081/pay/jump/";
+
+export const PayQueryUrl = "http://pay.fanghailiang.cn:8081/pay/query/";

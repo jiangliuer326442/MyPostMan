@@ -16,6 +16,7 @@ import express from 'express';
 import chalk from 'chalk';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { getMarkdownContentByIteratorId } from './processInit/markdown';
+import { getRequestByIterator } from './processInit/mockserver';
 import { GLobalPort, DevHtmlPort } from '../config/global_config';
 import MenuBuilder from './menu';
 import { resolveHtmlPath, getAssetPath } from './util/util';
@@ -71,14 +72,21 @@ const startServer = (cb) => {
         app.use(express.static(staticPath));  
       }
       app.use(express.urlencoded({ extended: true }));
-      app.get('*', (req, res) => {
-        if (process.env.NODE_ENV !== 'development') {
-          res.sendFile(path.join(staticPath, 'index.html'));
-        }
+      app.get('/mockserver/:iteratorId/:project/*', (req, res) => {
+        let iteratorId = req.params.iteratorId;
+        let project = req.params.project;
+        let uri = req.originalUrl.split("/").slice(4).join("/");
+        let method = req.method;
+        getRequestByIterator(iteratorId, project, method, uri, res);
       });
       app.post('/sprint/docs', (req, res) => {
         let iteratorId = req.body.iteratorId;
         getMarkdownContentByIteratorId(iteratorId, res);
+      });
+      app.get('*', (req, res) => {
+        if (process.env.NODE_ENV !== 'development') {
+          res.sendFile(path.join(staticPath, 'index.html'));
+        }
       });
       app.listen(port, () => {  
           cb();
