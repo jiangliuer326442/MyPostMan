@@ -42,9 +42,9 @@
 
 如果不想从源码一步步编译，可以从以下链接下载可执行文件：
 
-windows 平台：[MyPostMan-Setup-0.0.4.exe](https://gitee.com/onlinetool/mypostman/releases/download/v0.0.4/MyPostMan_Setup_0.0.4.exe)
+windows 平台：[MyPostMan-Setup-0.0.5.exe](https://gitee.com/onlinetool/mypostman/releases/download/v0.0.5/MyPostMan-Setup-0.0.5.exe)
 
-mac 系统：[MyPostMan-0.0.4.dmg](https://gitee.com/onlinetool/mypostman/releases/download/v0.0.4/MyPostMan-0.0.4.dmg)
+mac 系统：[MyPostMan-0.0.5.dmg](https://gitee.com/onlinetool/mypostman/releases/download/v0.0.5/MyPostMan-0.0.5.dmg)
 
 **mac 可能遇到无法打开应用的情况，在终端执行命令`sudo spctl --master-disable` 后即可正常打开 **
 
